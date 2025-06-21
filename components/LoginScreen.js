@@ -6,19 +6,34 @@ import {
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native'; 
+import { useNavigation } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 
 export default function LoginScreen() {
-  const navigation = useNavigation(); 
-  const [email, setEmail] = useState('user');
-  const [password, setPassword] = useState('pass');
+  const navigation = useNavigation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+
+  const [fontsLoaded] = useFonts({
+    'RobotoCondensed-ExtraBoldItalic': require('../assets/fonts/Roboto_Condensed/static/RobotoCondensed-ExtraBoldItalic.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2E7BE8" />
+        <Text style={{ marginTop: 8 }}>Loading fonts...</Text>
+      </View>
+    );
+  }
 
   const handleLogin = () => {
     if (email && password) {
-      navigation.replace('MainTabs'); 
+      navigation.replace('MainTabs');
     } else {
       alert('Email dan password tidak boleh kosong!');
     }
@@ -78,13 +93,18 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   image: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   logoText: {
     position: 'absolute',
-    top: 60,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: '#000',
+    top: 100,
+    fontSize: 64,
+    fontFamily: 'RobotoCondensed-ExtraBoldItalic',
+    color: '#FFFFFF',
+    textShadowColor: '#000000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },

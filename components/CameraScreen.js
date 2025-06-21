@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   cameraTime: {
-    fontSize: 24,
+    fontSize: 44,
     color: "#fff",
     fontWeight: "bold",
   },
