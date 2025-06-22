@@ -9,10 +9,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  Animated
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
+import { useRef } from "react";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -43,6 +45,7 @@ export default function HomeScreen({ navigation }) {
 
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
+  const animatedValue = useRef(new Animated.Value(Dimensions.get("window").height)).current;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,6 +57,14 @@ export default function HomeScreen({ navigation }) {
       setCurrentTime(`${formattedHours}:${minutes} ${suffix}`);
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   return (
@@ -73,7 +84,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.whiteContainer}>
+        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
           <View style={styles.greyLine} />
           <Text style={styles.time}>{currentTime}</Text>
 
@@ -133,17 +144,16 @@ export default function HomeScreen({ navigation }) {
               [Kalender akan muncul di sini]
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
 
-      {/* Popup Izin */}
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#2E7BE8" },

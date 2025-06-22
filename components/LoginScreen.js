@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +20,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+  const formPosition = useRef(new Animated.Value(0)).current;
 
   const [fontsLoaded] = useFonts({
     'RobotoCondensed-ExtraBoldItalic': require('../assets/fonts/Roboto_Condensed/static/RobotoCondensed-ExtraBoldItalic.ttf'),
@@ -35,7 +37,13 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     if (email && password) {
-      navigation.replace('MainTabs');
+      Animated.timing(formPosition, {
+        toValue: 1000, 
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        navigation.replace('MainTabs');
+      });
     } else {
       alert('Username dan password tidak boleh kosong!');
     }
@@ -51,7 +59,7 @@ export default function LoginScreen() {
             style={styles.image}
             resizeMode="cover"
           >
-            <View style={styles.formContainer}>
+            <Animated.View style={[styles.formContainer, { transform: [{ translateY: formPosition }] }]}>
               <Text style={styles.welcome}>Welcome!</Text>
 
               <TextInput
@@ -87,7 +95,7 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
                 <Text style={styles.loginText}>Login</Text>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           </ImageBackground>
         </View>
     </KeyboardAvoidingView>
