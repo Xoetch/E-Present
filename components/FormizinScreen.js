@@ -82,6 +82,7 @@ export default function FormizinPopup({ visible, onClose }) {
             mode="date"
             display="default"
             onChange={handleStartChange}
+            maximumDate={endDate}
           />
         )}
 
@@ -98,6 +99,7 @@ export default function FormizinPopup({ visible, onClose }) {
             mode="date"
             display="default"
             onChange={handleEndChange}
+            minimumDate={startDate}
           />
         )}
 

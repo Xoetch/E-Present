@@ -4,7 +4,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 
+
 // Screens
+import * as SplashScreen from 'expo-splash-screen';
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
 import HistoryScreen from "./components/HistoryScreen";
@@ -14,6 +16,7 @@ import FormizinScreen from "./components/FormizinScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
 
 function MainTabs() {
   return (

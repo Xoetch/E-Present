@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ImageBackground,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -35,58 +37,60 @@ export default function LoginScreen() {
     if (email && password) {
       navigation.replace('MainTabs');
     } else {
-      alert('Email dan password tidak boleh kosong!');
+      alert('Username dan password tidak boleh kosong!');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <ImageBackground
-        source={require('../assets/background.png')}
-        style={styles.image}
-        resizeMode="cover"
-      >
-        <Text style={styles.logoText}>E-PRESENT</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'android' ? 'padding' : 'height'}
+      style={styles.container} >
+        <View style={styles.container}>
+          <ImageBackground
+            source={require('../assets/background.png')}
+            style={styles.image}
+            resizeMode="cover"
+          >
+            <View style={styles.formContainer}>
+              <Text style={styles.welcome}>Welcome!</Text>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.welcome}>Welcome!</Text>
-
-          <TextInput
-            placeholder="Email Address"
-            placeholderTextColor="#999"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          <View style={styles.passwordContainer}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#999"
-              style={styles.passwordInput}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={secureText}
-            />
-            <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-              <Ionicons
-                name={secureText ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color="#999"
+              <TextInput
+                placeholder="Username"
+                placeholderTextColor="#999"
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
               />
-            </TouchableOpacity>
-          </View>
 
-          <TouchableOpacity>
-            <Text style={styles.forgot}>Forgot password?</Text>
-          </TouchableOpacity>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  placeholder="Password"
+                  placeholderTextColor="#999"
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={secureText}
+                />
+                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                  <Ionicons
+                    name={secureText ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+              </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginText}>Login</Text>
-          </TouchableOpacity>
+              <TouchableOpacity>
+                <Text style={styles.forgot}>Forgot password?</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Text style={styles.loginText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
         </View>
-      </ImageBackground>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -97,16 +101,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  logoText: {
-    position: 'absolute',
-    top: 100,
-    fontSize: 64,
-    fontFamily: 'RobotoCondensed-ExtraBoldItalic',
-    color: '#FFFFFF',
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
   },
   formContainer: {
     width: '100%',

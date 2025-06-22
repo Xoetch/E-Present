@@ -121,7 +121,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <View style={styles.rowBetween}>
               <Text style={styles.cardTitle}>Riwayat Absensi</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate("Riwayat")}>
                 <Text style={styles.link}>Lihat Selengkapnya ›</Text>
               </TouchableOpacity>
             </View>

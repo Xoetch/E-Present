@@ -22,7 +22,7 @@ const attendanceData = [
   { id: "12", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
   { id: "13", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
   { id: "14", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "15", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
+  { id: "15", type: "Masuk Kerja", time: "05:00 AM", date: "2024-01-14" },
 ];
 
 export default function HistoryScreen() {
