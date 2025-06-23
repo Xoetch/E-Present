@@ -1,14 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "@react-navigation/native"; // ✅
+import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 export default function ProfileScreen() {
-  const navigation = useNavigation(); // ✅
-  const [language, setLanguage] = useState("Indonesia");
+  const navigation = useNavigation();
   const [image, setImage] = useState("https://upload.wikimedia.org/wikipedia/commons/7/73/Lion_waiting_in_Namibia.jpg");
+  
+  const { t, i18n } = useTranslation();
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+
+  useEffect(() => { 
+    const handleLanguageChange = (lng) => {
+      setCurrentLang(lng);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
+
+  const handleLanguageChange = async (langCode) => {
+    try {
+      await i18n.changeLanguage(langCode);
+      setCurrentLang(langCode);
+    } catch (error) {
+      console.error("Error changing language:", error);
+    }
+  }
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -17,6 +39,7 @@ export default function ProfileScreen() {
       aspect: [1, 1],
       quality: 1,
     });
+    
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
@@ -24,7 +47,6 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    // 🚪 Kembali ke halaman Login
     navigation.replace("Login");
   };
 
@@ -47,50 +69,50 @@ export default function ProfileScreen() {
         <View style={styles.infoRow}>
           <Ionicons name="person" size={20} color="#888" style={styles.icon} />
           <View>
-            <Text style={styles.label}>Profil Pekerja</Text>
+            <Text style={styles.label}>{t('profile.name')}</Text>
             <Text style={styles.value}>Mas Altap</Text>
           </View>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="business" size={20} color="#888" style={styles.icon} />
           <View>
-            <Text style={styles.label}>Tempat Bekerja</Text>
+            <Text style={styles.label}>{t('profile.workplace')}</Text>
             <Text style={styles.value}>Astra International</Text>
           </View>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="time" size={20} color="#888" style={styles.icon} />
           <View>
-            <Text style={styles.label}>Shift Kerja Hari Ini</Text>
+            <Text style={styles.label}>{t('profile.shift')}</Text>
             <Text style={styles.value}>Pagi (08:00 - 16:00)</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.languageCard}>
-        <Text style={styles.languageTitle}>🌐 Pengaturan Bahasa</Text>
+        <Text style={styles.languageTitle}>🌐 {t('profile.Localization')}</Text>
         <View style={styles.languageButtons}>
           <TouchableOpacity
-            style={[styles.languageButton, language === "English" && styles.languageSelected]}
-            onPress={() => setLanguage("English")}
+            style={[styles.languageButton, currentLang === "en" && styles.languageSelected]}
+            onPress={() => handleLanguageChange("en")}
           >
-            <Text style={[styles.languageText, language === "English" && styles.languageTextSelected]}>
-              English
+            <Text style={[styles.languageText, currentLang === "en" && styles.languageTextSelected]}>
+              {t('profile.eng')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.languageButton, language === "Indonesia" && styles.languageSelected]}
-            onPress={() => setLanguage("Indonesia")}
+            style={[styles.languageButton, currentLang === "id" && styles.languageSelected]}
+            onPress={() => handleLanguageChange("id")}
           >
-            <Text style={[styles.languageText, language === "Indonesia" && styles.languageTextSelected]}>
-              Indonesia
+            <Text style={[styles.languageText, currentLang === "id" && styles.languageTextSelected]}>
+              {t('profile.ind')}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>🚪 Log Out</Text>
+        <Text style={styles.logoutText}>🚪 {t('profile.logout')}</Text>
       </TouchableOpacity>
     </View>
   );

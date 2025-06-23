@@ -18,7 +18,8 @@
         {
           "recordAudioAndroid": true
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "ios": {
       "supportsTablet": true

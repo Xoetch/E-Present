@@ -1,0 +1,87 @@
+{
+  "general": {
+    "loading": "Loading...",
+    "masuk": "Clock In",
+    "pulang": "Clock Out",
+    "absen": "Take Attendance",
+    "izin": "Leave Request",
+    "sakit": "Sick Leave",
+    "cuti": "Leave",
+    "alfa": "Unexcused",
+    "semua": "All"
+  },
+  "home": {
+    "welcome": "Welcome to E-Present!",
+    "staistik": "Attendance Statistics",
+    "history": "Attendance History",
+    "lihat": "View More",
+    "calendar": "Calendar"
+  },
+  "bar": {
+    "home": "Home",
+    "history": "History",
+    "profile": "Profile"
+  },
+  "login": {
+    "title": "Welcome!",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "forgor": "Forgot Password?"
+  },
+  "profile": {
+    "name": "Worker Profile",
+    "workplace": "Workplace",
+    "shift": "Work Shift",
+    "Localization": "Language Settings",
+    "eng": "English",
+    "ind": "Indonesian",
+    "logout": "Logout"
+  },
+  "history": {
+    "title": "Attendance History",
+    "blank": "No attendance records found this month.",
+    "bulan": "Month",
+    "tahun": "Year",
+    "jenis": "Attendance Type",
+    "btn": "Apply",
+    "tidakMasuk": "Not Attended",
+    "semuaWaktu": "All Time"
+  },
+  "notif": {},
+  "camera": {
+    "warn": "Attention!",
+    "desc1": "Ensure your camera is active and facing your face.",
+    "desc2": "Make sure your GPS is turned on and you're at your work location."
+  },
+  "form": {
+    "title": "Leave Request",
+    "tglAwal": "Start Date",
+    "tglAkhir": "End Date",
+    "jenis": "Leave Type",
+    "bukti": "Proof of Leave",
+    "btnConfirm": "Submit Request",
+    "btnClose": "Close"
+  },
+  "result": {
+    "error": "FAILED!",
+    "success": "SUCCESS!",
+    "desc1": "You may now close this page.",
+    "desc2": "Please wait, your request is being processed...",
+    "desc3": "Uh oh... Something went wrong. Please try again later or contact admin."
+  },
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  }
+}

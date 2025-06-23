@@ -16,27 +16,31 @@ import {
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
 import CalendarWithHoliday from "./Calendar";
+import { useTranslation } from "react-i18next";
+
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
 export default function HomeScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
+
   const chartData = [
     {
-      name: "Masuk",
+      name: t("general.masuk"), 
       population: 45,
       color: "#2E7BE8",
       legendFontColor: "#444",
       legendFontSize: 12,
     },
     {
-      name: "Izin",
+      name: t('general.izin'),
       population: 18,
       color: "#FEC107",
       legendFontColor: "#444",
       legendFontSize: 12,
     },
     {
-      name: "Alfa",
+      name: t('general.alfa'),
       population: 36,
       color: "#F44336",
       legendFontColor: "#444",
@@ -120,7 +124,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.profileImage}
           />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.welcome}>Selamat datang di E-Present</Text>
+            <Text style={styles.welcome}>{t("home.welcome")}</Text>
             <Text style={styles.userName}>Kaiser Wilhelm Althafazu</Text>
           </View>
         </View>
@@ -140,7 +144,7 @@ export default function HomeScreen({ navigation }) {
               onPress={() => handleNavigation("CameraScreen")}
             >
               <Ionicons name="scan" size={24} color="#2E7BE8" />
-              <Text style={styles.actionLabel}>Absen</Text>
+              <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -152,12 +156,12 @@ export default function HomeScreen({ navigation }) {
                 size={24}
                 color="#2E7BE8"
               />
-              <Text style={styles.actionLabel}>Izin</Text>
+              <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Statistik</Text>
+            <Text style={styles.cardTitle}>{t("home.staistik")}</Text>
             <PieChart
               data={chartData}
               width={screenWidth - 32}
@@ -177,15 +181,15 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.cardTitle}>Riwayat Absensi</Text>
+              <Text style={styles.cardTitle}>{t('home.history')}</Text>
               <TouchableOpacity onPress={() => handleNavigation("Riwayat")}>
-                <Text style={styles.link}>Lihat Selengkapnya ›</Text>
+                <Text style={styles.link}>{t('home.lihat')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Kalender</Text>
+            <Text style={styles.cardTitle}>{t('home.calendar')}</Text>
             <Text style={styles.calendarPlaceholder}>
               <CalendarWithHoliday />
             </Text>
@@ -201,7 +205,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#2E7BE8" },
   blueBackground: {
     position: "absolute",
@@ -244,7 +248,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "bold",
-    marginVertical: 8,
+    marginVertical: 16,
     color: "#6B7280",
   },
   actionCard: {
