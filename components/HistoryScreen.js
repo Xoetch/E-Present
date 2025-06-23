@@ -1,84 +1,175 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 
+// Dummy data absensi
 const attendanceData = [
   { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-  { id: "2", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-  { id: "3", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-  { id: "4", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "5", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "6", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "7", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "8", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "9", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "11", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "12", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "13", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "14", type: "Pulang Kerja", time: "05:00 PM", date: "2024-01-14" },
-  { id: "15", type: "Masuk Kerja", time: "05:00 AM", date: "2024-01-14" },
+  { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
+  { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
+  { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
+  { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
+  { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
+];
+
+const months = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
 export default function HistoryScreen() {
-  const [month, setMonth] = useState("Desember");
+  const currentDate = new Date();
+
+  // Filter aktif
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
+  const [selectedType, setSelectedType] = useState("All");
+
+  // Filter sementara (saat modal terbuka)
+  const [tempMonth, setTempMonth] = useState(selectedMonth);
+  const [tempYear, setTempYear] = useState(selectedYear);
+  const [tempType, setTempType] = useState(selectedType);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [filteredData, setFilteredData] = useState([]);
+
+  // Fungsi untuk filter data berdasarkan filter aktif
+  const applyFilter = () => {
+    const filtered = attendanceData.filter((item) => {
+      const itemDate = new Date(item.date);
+      const matchMonth = tempMonth === "All" || itemDate.getMonth() === parseInt(tempMonth);
+      const matchYear = tempYear === "All" || itemDate.getFullYear() === parseInt(tempYear);
+      const matchType = tempType === "All" || item.type === tempType;
+      return matchMonth && matchYear && matchType;
+    });
+
+    setSelectedMonth(tempMonth);
+    setSelectedYear(tempYear);
+    setSelectedType(tempType);
+    setFilteredData(filtered);
+    setModalVisible(false);
+  };
+
+  // Saat pertama kali load
+  useEffect(() => {
+    applyFilter();
+  }, []);
+
+  const getMonthYearLabel = () => {
+    const isAllMonth = selectedMonth === "All";
+    const isAllYear = selectedYear === "All";
+    if (isAllMonth && isAllYear) return "Semua Waktu";
+    if (!isAllMonth && isAllYear) return `Bulan ${months[parseInt(selectedMonth)]}`;
+    if (isAllMonth && !isAllYear) return `Tahun ${selectedYear}`;
+    return `${months[parseInt(selectedMonth)]} ${selectedYear}`;
+  };
 
   const renderItem = ({ item }) => {
     const isMasuk = item.type === "Masuk Kerja";
     return (
       <View style={styles.itemContainer}>
-        <View
-          style={[
-            styles.circleIcon,
-            { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
-          ]}
-        >
+        <View style={[styles.circleIcon, { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" }]}>
           <Ionicons name="time" size={18} color="#fff" />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.typeText}>{item.type}</Text>
           <Text style={styles.dateText}>{item.date}</Text>
         </View>
-        <Text
-          style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}
-        >
-          {item.time}
-        </Text>
+        <Text style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}>{item.time}</Text>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header Bulan */}
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.monthSwitcher}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="caret-back-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.monthContainer}>
-            <Text style={styles.monthText}>{month}</Text>
-          </View>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="caret-forward-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+        <View style={styles.filterCard}>
+          <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
+          <Text style={styles.filterText}>{getMonthYearLabel()}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => {
+            setTempMonth(selectedMonth);
+            setTempYear(selectedYear);
+            setTempType(selectedType);
+            setModalVisible(true);
+          }}
+        >
+          <Ionicons name="options-outline" size={20} color="#2E7BE8" />
+        </TouchableOpacity>
       </View>
 
-      {/* Kontainer isi */}
+      {/* Modal Filter */}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter</Text>
+
+            <Text style={styles.modalSubtitle}>Bulan</Text>
+            <Picker
+              selectedValue={tempMonth}
+              onValueChange={(itemValue) => setTempMonth(itemValue)}
+            >
+              <Picker.Item label="Semua" value="All" />
+              {months.map((month, index) => (
+                <Picker.Item key={index} label={month} value={index.toString()} />
+              ))}
+            </Picker>
+
+            <Text style={styles.modalSubtitle}>Tahun</Text>
+            <Picker
+              selectedValue={tempYear}
+              onValueChange={(itemValue) => setTempYear(itemValue)}
+            >
+              <Picker.Item label="Semua" value="All" />
+              {Array.from({ length: 10 }, (_, i) => {
+                const year = 2020 + i;
+                return (
+                  <Picker.Item key={year} label={year.toString()} value={year.toString()} />
+                );
+              })}
+            </Picker>
+
+            <Text style={styles.modalSubtitle}>Jenis Absensi</Text>
+            <Picker
+              selectedValue={tempType}
+              onValueChange={(itemValue) => setTempType(itemValue)}
+            >
+              <Picker.Item label="Semua" value="All" />
+              <Picker.Item label="Masuk Kerja" value="Masuk Kerja" />
+              <Picker.Item label="Pulang Kerja" value="Pulang Kerja" />
+              <Picker.Item label="Tidak Masuk" value="Tidak Masuk" />
+            </Picker>
+
+            <TouchableOpacity style={styles.modalButton} onPress={applyFilter}>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Terapkan</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* List */}
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Riwayat Absensi</Text>
         <FlatList
-          data={attendanceData}
+          data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Tidak ada data di bulan ini</Text>
+          }
         />
       </View>
     </View>
@@ -86,97 +177,108 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#2E7BE8",
-  },
+  container: { flex: 1, backgroundColor: "#2E7BE8" },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    backgroundColor: "#2E7BE8",
+    paddingBottom: 20,
   },
-  monthSwitcher: {
+  filterCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 32,
-    width: 335,
-    height: 64,
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-  },
-  iconButton: {
-    backgroundColor: "#2E7BE8",
-    borderRadius: 20,
-    padding: 8,
-  },
-  monthContainer: {
-    backgroundColor: "#2E7BE8",
     paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     borderRadius: 20,
-    width: 134,
-    height: 44,
-    alignItems: "center",
+    elevation: 9,
   },
-  monthText: {
-    color: "#fff",
+  filterText: {
+    color: "#2E7BE8",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  filterButton: {
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 30,
+    elevation: 8,
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFF",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 24,
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: "#6B7280",
     alignSelf: "center",
     marginBottom: 16,
   },
-  listContent: {
-    paddingBottom: 100,
-  },
+  listContent: { paddingBottom: 80 },
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 12,
+    elevation: 1,
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
-    elevation: 1,
   },
   circleIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
-  textContainer: {
+  textContainer: { flex: 1 },
+  typeText: { fontSize: 16, fontWeight: "bold", color: "#007AFF" },
+  dateText: { fontSize: 13, color: "#777" },
+  timeText: { fontSize: 15, fontWeight: "bold" },
+  emptyText: { textAlign: "center", color: "#999", marginTop: 50 },
+  modalOverlay: {
     flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
-  typeText: {
-    fontSize: 16,
+  modalContent: {
+    backgroundColor: "#fff",
+    marginHorizontal: 30,
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#007AFF",
+    marginBottom: 10,
+    alignSelf: "center",
   },
-  dateText: {
-    fontSize: 13,
-    color: "#777",
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 10,
+    marginBottom: 4,
   },
-  timeText: {
-    fontSize: 15,
-    fontWeight: "bold",
+  modalButton: {
+    backgroundColor: "#2E7BE8",
+    marginTop: 16,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
   },
 });

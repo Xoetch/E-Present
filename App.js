@@ -1,24 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context";
-
+import { useFonts } from "expo-font";
+import { Text, View, ActivityIndicator } from "react-native";
 
 // Screens
-import * as SplashScreen from 'expo-splash-screen';
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import CameraScreen from "./components/CameraScreen";
 import FormizinScreen from "./components/FormizinScreen";
-import { StatusBar } from "expo-status-bar";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
@@ -27,16 +25,16 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#2E7BE8',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: "#2E7BE8",
+        tabBarInactiveTintColor: "gray",
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Riwayat') {
-            iconName = focused ? 'time' : 'time-outline';
-          } else if (route.name === 'Profil') {
-            iconName = focused ? 'person' : 'person-outline';
+          if (route.name === "Home") {
+            iconName = focused ? "home" : "home-outline";
+          } else if (route.name === "Riwayat") {
+            iconName = focused ? "time" : "time-outline";
+          } else if (route.name === "Profil") {
+            iconName = focused ? "person" : "person-outline";
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -56,6 +54,32 @@ function MainTabs() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    "InriaSans-Regular": require("./assets/fonts/Inria_Sans/InriaSans-Regular.ttf"),
+    "InriaSans-Bold": require("./assets/fonts/Inria_Sans/InriaSans-Bold.ttf"),
+    "InriaSans-Italic": require("./assets/fonts/Inria_Sans/InriaSans-Italic.ttf"),
+    "InriaSans-BoldItalic": require("./assets/fonts/Inria_Sans/InriaSans-BoldItalic.ttf"),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      const defaultText = Text;
+      defaultText.defaultProps = defaultText.defaultProps || {};
+      defaultText.defaultProps.style = [
+        defaultText.defaultProps.style,
+        { fontFamily: "InriaSans-Regular" },
+      ];
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#2E7BE8" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
