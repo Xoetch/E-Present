@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
-
+import CalendarWithHoliday from "./Calendar";
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 
@@ -187,7 +187,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Kalender</Text>
             <Text style={styles.calendarPlaceholder}>
-              [Kalender akan muncul di sini]
+              <CalendarWithHoliday />
             </Text>
           </View>
         </Animated.View>
