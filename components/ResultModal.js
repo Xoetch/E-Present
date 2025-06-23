@@ -2,8 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
 
 export default function resultModal({ visible, onClose, isSuccess }) {
-  const title = isSuccess ? "Berhasil" : "Gagal";
-
+  const title = isSuccess ? "Berhasil!" : "Gagal!";
   /* pengkondisian warna gagal atau sukses */
   const titleStyle = {
     ...styles.title,
@@ -21,12 +20,17 @@ export default function resultModal({ visible, onClose, isSuccess }) {
       <View style={styles.container}>
         <View style={styles.topBar} />
         <Text style={titleStyle}>{title}</Text>
-        
+
+        {/* image  */}
+
+        {/* deskripsi */}
+        <Text>{description}</Text>
+
         <TouchableOpacity
           onPress={onClose}
           style={{ marginTop: 12, alignSelf: "center" }}
         >
-          <Text style={{ color: "#2E7BE8" }}>Tutup</Text>
+          <Text style={{ color: "#2E7BE8" }}>Kembali ke menu utama</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -53,7 +57,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 16,

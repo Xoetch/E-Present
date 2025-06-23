@@ -1,0 +1,65 @@
+{
+    "general": {
+      "loading": "Memuat...",
+      "masuk": "Masuk Kerja",
+      "pulang": "Pulang Kerja",
+      "izin": "Izin",
+      "sakit": "Sakit",
+      "cuti": "Cuti"
+    },
+    "home": {
+        "welcome": "Selamat Datang di E-Present!",
+        "staistik": "Statistik Kehadiran",
+        "history": "Riwayat Kehadiran",
+        "lihat": "Lihat Selengkapnya",
+        "calendar": "Kalender Kehadiran",
+        "masuk": "Masuk",
+        "absen": "Absen"
+    },
+    "bar": {
+        "home": "Beranda",
+        "history": "Riwayat",
+        "profile": "Profil"
+    },
+    "login": {
+        "title": "Selamat Datang!",
+        "username": "Nama Pengguna",
+        "password": "Kata Sandi",
+        "login": "Masuk",
+        "forgor": "Lupa Kata Sandi?"
+    },
+    "profile": {
+        "name": "Profil Pekerja",
+        "workplace": "Tempat Bekerja",
+        "shift": "Shift Kerja",
+        "Localization": "Pengaturan Bahasa",
+        "eng": "Bahasa Inggris",
+        "ind": "Bahasa Indonesia",
+        "logout": "Keluar"
+    },
+    "history": {
+        "title": "Riwayat Absensi"
+    }, 
+    "notif": {
+
+    },
+    "camera": {
+
+    },
+    "form": {
+        "title": "Pengajuan Izin",
+        "tglAwal": "Tanggal Awal",
+        "tglAkhir": "Tanggal Akhir",
+        "jenis": "Jenis Izin",
+        "bukti": "Bukti Izin",
+        "btnConfirm": "Ajukan Izin",
+        "btnClose": "Tutup"
+    },
+    "result": {
+        "error": "GAGAL!",
+        "success": "BERHASIL!",
+        "desc1": "anda dapat menutup halaman ini.",
+        "desc2": "tunggu sebentar, sistem sedang memproses permintaan anda...",
+        "desc3": "Uh Oh... Sepertinya terjadi kesalahan, Silahkan coba lagi nanti atau panggil admin."
+     }
+}

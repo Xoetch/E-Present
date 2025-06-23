@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Animated,
   View,
   Text,
   FlatList,
