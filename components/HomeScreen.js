@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
-
+import CalendarWithHoliday from "./Calendar";
 const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen({ navigation }) {
@@ -130,7 +130,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Kalender</Text>
             <Text style={styles.calendarPlaceholder}>
-              [Kalender akan muncul di sini]
+              <CalendarWithHoliday />
             </Text>
           </View>
         </View>
