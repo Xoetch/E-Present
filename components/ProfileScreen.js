@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native"; // ✅
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const navigation = useNavigation(); // ✅
@@ -55,6 +56,13 @@ export default function ProfileScreen() {
           <View>
             <Text style={styles.label}>Tempat Bekerja</Text>
             <Text style={styles.value}>Astra International</Text>
+          </View>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="time" size={20} color="#888" style={styles.icon} />
+          <View>
+            <Text style={styles.label}>Shift Kerja Hari Ini</Text>
+            <Text style={styles.value}>Pagi (08:00 - 16:00)</Text>
           </View>
         </View>
       </View>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState("front");
@@ -10,6 +11,7 @@ export default function CameraScreen() {
   const [currentTime, setCurrentTime] = useState("");
   const [permission, requestPermission] = useCameraPermissions();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,7 +55,7 @@ export default function CameraScreen() {
   }
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, {paddingTop: insets.top}]}>
       {/* Bagian atas: peringatan */}
       <View style={styles.headerContainer}>
         <View style={styles.warningBox}>
@@ -80,7 +82,7 @@ export default function CameraScreen() {
       </View>
 
       {/* Footer Actions */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>

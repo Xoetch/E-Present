@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -50,55 +51,57 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'android' ? 'padding' : 'height'}
-      style={styles.container} >
-        <View style={styles.container}>
-          <ImageBackground
-            source={require('../assets/background.png')}
-            style={styles.image}
-            resizeMode="cover"
-          >
-            <Animated.View style={[styles.formContainer, { transform: [{ translateY: formPosition }] }]}>
-              <Text style={styles.welcome}>Welcome!</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'android' ? 'padding' : 'height'}
+        style={styles.container} >
+          <View style={styles.container}>
+            <ImageBackground
+              source={require('../assets/background.png')}
+              style={styles.image}
+              resizeMode="cover"
+            >
+              <Animated.View style={[styles.formContainer, { transform: [{ translateY: formPosition }] }]}>
+                <Text style={styles.welcome}>Welcome!</Text>
 
-              <TextInput
-                placeholder="Username"
-                placeholderTextColor="#999"
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-              />
-
-              <View style={styles.passwordContainer}>
                 <TextInput
-                  placeholder="Password"
+                  placeholder="Username"
                   placeholderTextColor="#999"
-                  style={styles.passwordInput}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={secureText}
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
                 />
-                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                  <Ionicons
-                    name={secureText ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color="#999"
+
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    style={styles.passwordInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={secureText}
                   />
+                  <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                    <Ionicons
+                      name={secureText ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#999"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity>
+                  <Text style={styles.forgot}>Forgot password?</Text>
                 </TouchableOpacity>
-              </View>
 
-              <TouchableOpacity>
-                <Text style={styles.forgot}>Forgot password?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginText}>Login</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </ImageBackground>
-        </View>
-    </KeyboardAvoidingView>
+                <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                  <Text style={styles.loginText}>Login</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </ImageBackground>
+          </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
