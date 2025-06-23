@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Calendar } from "react-native-calendars";
 
-// GANTI dengan API KEY dari Google Cloud Console kamu
 const API_KEY = "AIzaSyASdAnPyCeRCUpdpU4BcVKMI9G4xlx1wvA"; 
 const CALENDAR_ID = "id.indonesian%23holiday@group.v.calendar.google.com";
 
