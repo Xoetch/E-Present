@@ -1,20 +1,19 @@
 // HomeScreen.js
 
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-  Animated
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
-import { useRef } from "react";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -45,7 +44,9 @@ export default function HomeScreen({ navigation }) {
 
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
-  const animatedValue = useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const animatedValue = useRef(
+    new Animated.Value(Dimensions.get("window").height)
+  ).current;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -84,7 +85,12 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
+        <Animated.View
+          style={[
+            styles.whiteContainer,
+            { transform: [{ translateY: animatedValue }] },
+          ]}
+        >
           <View style={styles.greyLine} />
           <Text style={styles.time}>{currentTime}</Text>
 
@@ -153,7 +159,7 @@ export default function HomeScreen({ navigation }) {
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#2E7BE8" },
@@ -199,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginVertical: 8,
-    color: "#444",
+    color: "#6B7280",
   },
   actionCard: {
     flexDirection: "row",
