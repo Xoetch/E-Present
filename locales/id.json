@@ -1,8 +1,9 @@
 {
     "general": {
       "loading": "Memuat...",
-      "masuk": "Masuk Kerja",
-      "pulang": "Pulang Kerja",
+      "masuk": "Masuk",
+      "pulang": "Pulang",
+      "absen": "Absen",
       "izin": "Izin",
       "sakit": "Sakit",
       "cuti": "Cuti"
@@ -12,9 +13,7 @@
         "staistik": "Statistik Kehadiran",
         "history": "Riwayat Kehadiran",
         "lihat": "Lihat Selengkapnya",
-        "calendar": "Kalender Kehadiran",
-        "masuk": "Masuk",
-        "absen": "Absen"
+        "calendar": "Kalender Kehadiran"
     },
     "bar": {
         "home": "Beranda",
@@ -44,7 +43,9 @@
 
     },
     "camera": {
-
+        "warn": "Perhatian!",
+        "desc1": "Pastikan kamera anda aktif dan menghadap ke wajah anda.",
+        "desc2": "Pastikan GPS anda aktif dan berada di lokasi bekerja"
     },
     "form": {
         "title": "Pengajuan Izin",
