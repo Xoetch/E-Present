@@ -1,14 +1,42 @@
-import React, { useState } from "react";
+import React, { use, useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native"; // ✅
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function ProfileScreen() {
   const navigation = useNavigation(); // ✅
   const [language, setLanguage] = useState("Indonesia");
   const [image, setImage] = useState("https://upload.wikimedia.org/wikipedia/commons/7/73/Lion_waiting_in_Namibia.jpg");
+  const [userData, setUserData] = useState({
+    nama_lengkap: "",
+    alamat_lengkap: "",
+    jam_shift: "",
+    foto_pengguna: "",
+  });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const dataString = await AsyncStorage.getItem('userData');
+        if (dataString) {
+          const data = JSON.parse(dataString);
+          setUserData({
+            nama_lengkap: data.nama_lengkap || "",
+            alamat_lengkap: data.alamat_lengkap || "",
+            jam_shift: data.jam_shift || "",
+            foto_pengguna: data.foto_pengguna || "",
+          });
+        }
+      } catch (e) {
+        console.log('Gagal mengambil userData:', e);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -23,8 +51,8 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
-    // 🚪 Kembali ke halaman Login
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
     navigation.replace("Login");
   };
 
@@ -41,28 +69,28 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.nameText}>Kaiser Wilhelm Althafazu</Text>
+      <Text style={styles.nameText}>{userData.nama_lengkap}</Text>
 
       <View style={styles.infoCard}>
-        <View style={styles.infoRow}>
+        {/* <View style={styles.infoRow}>
           <Ionicons name="person" size={20} color="#888" style={styles.icon} />
           <View>
             <Text style={styles.label}>Profil Pekerja</Text>
-            <Text style={styles.value}>Mas Altap</Text>
+            <Text style={styles.value}>{userData.jabatan || "Mas Altap"}</Text>
           </View>
-        </View>
+        </View> */}
         <View style={styles.infoRow}>
           <Ionicons name="business" size={20} color="#888" style={styles.icon} />
           <View>
-            <Text style={styles.label}>Tempat Bekerja</Text>
-            <Text style={styles.value}>Astra International</Text>
+            <Text style={styles.label}>Alamat Bekerja</Text>
+            <Text style={styles.value}>{userData.alamat_lengkap || "Astra International"}</Text>
           </View>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="time" size={20} color="#888" style={styles.icon} />
           <View>
             <Text style={styles.label}>Shift Kerja Hari Ini</Text>
-            <Text style={styles.value}>Pagi (08:00 - 16:00)</Text>
+            <Text style={styles.value}>{userData.jam_shift || "Pagi (08:00 - 16:00)"}</Text>
           </View>
         </View>
       </View>

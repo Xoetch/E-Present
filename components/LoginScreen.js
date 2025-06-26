@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -18,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const formPosition = useRef(new Animated.Value(0)).current;
@@ -27,6 +28,16 @@ export default function LoginScreen() {
     'RobotoCondensed-ExtraBoldItalic': require('../assets/fonts/Roboto_Condensed/static/RobotoCondensed-ExtraBoldItalic.ttf'),
   });
 
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        navigation.replace('MainTabs');
+      }
+    };
+    checkToken();
+  }, []);
+  
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -36,19 +47,54 @@ export default function LoginScreen() {
     );
   }
 
-  const handleLogin = () => {
-    if (email && password) {
-      Animated.timing(formPosition, {
-        toValue: 1000, 
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        navigation.replace('MainTabs');
-      });
+  
+  const loginFetch = async () => {
+    const response = await fetch('http://10.1.51.153:8080/user/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: username,
+        password: password,
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      throw new Error('Response bukan JSON');
+    }
+    if (data && data.status === 200) {
+      return data.data;
+    } else {
+      throw new Error(data?.message || 'Username atau Password salah!');
+    }
+  };
+  
+  const handleLogin = async () => {
+
+    if (username && password) {
+      try {
+        const fullData = await loginFetch();
+
+        await AsyncStorage.setItem('userToken', fullData.token);
+        await AsyncStorage.setItem('userData', JSON.stringify(fullData.user));
+        Animated.timing(formPosition, {
+          toValue: 1000,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          navigation.replace('MainTabs');
+        });
+      } catch (error) {
+        alert(error.message || 'Username atau password salah!');
+      }
     } else {
       alert('Username dan password tidak boleh kosong!');
     }
   };
+
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -68,8 +114,8 @@ export default function LoginScreen() {
                   placeholder="Username"
                   placeholderTextColor="#999"
                   style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
+                  value={username}
+                  onChangeText={setUsername}
                 />
 
                 <View style={styles.passwordContainer}>

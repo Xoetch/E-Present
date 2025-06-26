@@ -9,16 +9,17 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Dummy data absensi
-const attendanceData = [
-  { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-  { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
-  { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-  { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
-  { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-  { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
-];
+// const attendanceData = [
+//   { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
+//   { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
+//   { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
+//   { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
+//   { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
+//   { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
+// ];
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -28,12 +29,26 @@ const months = [
 export default function HistoryScreen() {
   const currentDate = new Date();
 
-  // Filter aktif
+  // 1. State untuk id_pengguna
+  const [userId, setUserId] = useState(null);
+
+  // 2. Dummy data absensi jadi useState
+  const [attendanceData, setAttendanceData] = useState([
+    { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
+    { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
+    { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
+    { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
+    { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
+    { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
+  ]);
+
+  // 5. State untuk hasil API
+  const [historyData, setHistoryData] = useState([]);
+
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedType, setSelectedType] = useState("All");
 
-  // Filter sementara (saat modal terbuka)
   const [tempMonth, setTempMonth] = useState(selectedMonth);
   const [tempYear, setTempYear] = useState(selectedYear);
   const [tempType, setTempType] = useState(selectedType);
@@ -41,13 +56,86 @@ export default function HistoryScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
 
-  // Fungsi untuk filter data berdasarkan filter aktif
+  // 1. Ambil id_pengguna dari AsyncStorage
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const dataString = await AsyncStorage.getItem('userData');
+        if (dataString) {
+          const data = JSON.parse(dataString);
+          setUserId(data.id_pengguna);
+        }
+      } catch (e) {
+        console.log('Gagal mengambil userData:', e);
+      }
+    };
+    fetchUserId();
+  }, []);
+
+  // 3 & 4. Fetch data history dari API jika userId sudah ada
+  useEffect(() => {
+    console.log('Fetching history for userId:', userId);
+    const fetchHistory = async () => {
+      if (!userId) return;
+      try {
+        const response = await fetch(`http://10.1.51.153:8080/present/getHistory/${userId}`);
+        const result = await response.json();
+        // 6. Struktur data: tanggal, jam_masuk, jam_keluar, shift_kerja, status_kehadiran, bukti_kehadiran
+        if (result) {
+          setHistoryData(result.data);
+        } else {
+          setHistoryData([]);
+        }
+      } catch (e) {
+        console.log('Gagal mengambil history:', e);
+        setHistoryData([]);
+      }
+    };
+    fetchHistory();
+  }, [userId]);
+
+  useEffect(() => {
+    // 1. Filter hanya status_kehadiran "Hadir"
+    const hadirData = Array.isArray(historyData)
+      ? historyData.filter(item => item.status_kehadiran === "Hadir")
+      : [];
+  
+    // 2 & 3. Konversi setiap data menjadi 2 data (Masuk Kerja & Pulang Kerja)
+    let converted = [];
+    hadirData.forEach((item, idx) => {
+      // Masuk Kerja
+      if (item.jam_masuk) {
+        converted.push({
+          id: `${item.id}_masuk`,
+          type: "Masuk Kerja",
+          time: item.jam_masuk,
+          date: item.tanggal,
+        });
+      }
+      // Pulang Kerja
+      if (item.jam_keluar) {
+        converted.push({
+          id: `${item.id}_pulang`,
+          type: "Pulang Kerja",
+          time: item.jam_keluar,
+          date: item.tanggal,
+        });
+      }
+    });
+  
+    // 4. Urutkan: data pertama dari API jadi id terakhir setelah dikonversi, dan sebaliknya
+    converted = converted.reverse();
+  
+    setAttendanceData(converted);
+  }, [historyData]);
+
+  // Fungsi untuk filter data berdasarkan filter aktif (gunakan historyData)
   const applyFilter = () => {
-    const filtered = attendanceData.filter((item) => {
-      const itemDate = new Date(item.date);
+    const filtered = historyData.filter((item) => {
+      const itemDate = new Date(item.tanggal);
       const matchMonth = tempMonth === "All" || itemDate.getMonth() === parseInt(tempMonth);
       const matchYear = tempYear === "All" || itemDate.getFullYear() === parseInt(tempYear);
-      const matchType = tempType === "All" || item.type === tempType;
+      const matchType = tempType === "All" || item.status_kehadiran === tempType;
       return matchMonth && matchYear && matchType;
     });
 
@@ -58,10 +146,11 @@ export default function HistoryScreen() {
     setModalVisible(false);
   };
 
-  // Saat pertama kali load
+  // Saat pertama kali load dan setiap historyData berubah
   useEffect(() => {
     applyFilter();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyData]);
 
   const getMonthYearLabel = () => {
     const isAllMonth = selectedMonth === "All";
@@ -72,18 +161,23 @@ export default function HistoryScreen() {
     return `${months[parseInt(selectedMonth)]} ${selectedYear}`;
   };
 
+  // Render item untuk data dari API
   const renderItem = ({ item }) => {
-    const isMasuk = item.type === "Masuk Kerja";
+    const isMasuk = item.status_kehadiran === "Masuk Kerja";
     return (
       <View style={styles.itemContainer}>
         <View style={[styles.circleIcon, { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" }]}>
           <Ionicons name="time" size={18} color="#fff" />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.typeText}>{item.type}</Text>
-          <Text style={styles.dateText}>{item.date}</Text>
+          <Text style={styles.typeText}>{item.status_kehadiran}</Text>
+          <Text style={styles.dateText}>{item.tanggal}</Text>
+          <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
         </View>
-        <Text style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}>{item.time}</Text>
+        <View>
+          <Text style={[styles.timeText, { color: "#4CAF50" }]}>Masuk: {item.jam_masuk}</Text>
+          <Text style={[styles.timeText, { color: "#F44336" }]}>Pulang: {item.jam_keluar}</Text>
+        </View>
       </View>
     );
   };
@@ -163,7 +257,7 @@ export default function HistoryScreen() {
         <Text style={styles.title}>Riwayat Absensi</Text>
         <FlatList
           data={filteredData}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, idx) => item.id ? item.id.toString() : idx.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

@@ -15,12 +15,13 @@ import {
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
 import CalendarWithHoliday from "./Calendar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen({ navigation }) {
   const chartData = [
     {
-      name: "Masuk",
+      name: "Hadir",
       population: 45,
       color: "#2E7BE8",
       legendFontColor: "#444",
@@ -34,7 +35,7 @@ export default function HomeScreen({ navigation }) {
       legendFontSize: 12,
     },
     {
-      name: "Alfa",
+      name: "Alpa",
       population: 36,
       color: "#F44336",
       legendFontColor: "#444",
@@ -44,11 +45,18 @@ export default function HomeScreen({ navigation }) {
 
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
+  const [userData, setUserData] = useState({
+      nama_lengkap: "",
+      alamat_lengkap: "",
+      jam_shift: "",
+      foto_pengguna: "",
+    });
   const animatedValue = useRef(
     new Animated.Value(Dimensions.get("window").height)
   ).current;
 
   useEffect(() => {
+    // Interval untuk update waktu
     const interval = setInterval(() => {
       const now = new Date();
       const hours = now.getHours();
@@ -57,15 +65,35 @@ export default function HomeScreen({ navigation }) {
       const formattedHours = (hours % 12 || 12).toString().padStart(2, "0");
       setCurrentTime(`${formattedHours}:${minutes} ${suffix}`);
     }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
+  
+    // Ambil data user dan jalankan animasi
+    const fetchUserData = async () => {
+      try {
+        const dataString = await AsyncStorage.getItem('userData');
+        if (dataString) {
+          const data = JSON.parse(dataString);
+          setUserData({
+            nama_lengkap: data.nama_lengkap || "",
+            alamat_lengkap: data.alamat_lengkap || "",
+            jam_shift: data.jam_shift || "",
+            foto_pengguna: data.foto_pengguna || "",
+          });
+        }
+      } catch (e) {
+        console.log('Gagal mengambil userData:', e);
+      }
+    };
+  
     Animated.timing(animatedValue, {
       toValue: 0,
       duration: 500,
       useNativeDriver: true,
     }).start();
+  
+    fetchUserData();
+  
+    // Cleanup interval saat unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -81,7 +109,7 @@ export default function HomeScreen({ navigation }) {
           />
           <View style={styles.headerTextContainer}>
             <Text style={styles.welcome}>Selamat datang di E-Present</Text>
-            <Text style={styles.userName}>Kaiser Wilhelm Althafazu</Text>
+            <Text style={styles.userName}>{userData.nama_lengkap}</Text>
           </View>
         </View>
 
