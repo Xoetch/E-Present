@@ -13,8 +13,10 @@ import {
   View,
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import FormizinPopup from "./FormizinScreen"; // import FormizinPopup (modal)
+import FormizinPopup from "./FormizinScreen";
 import CalendarWithHoliday from "./Calendar";
+import WithLoader from "../utils/Loader";
+
 const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen({ navigation }) {
@@ -48,6 +50,8 @@ export default function HomeScreen({ navigation }) {
     new Animated.Value(Dimensions.get("window").height)
   ).current;
 
+  const [loadingTime, setLoadingTime] = useState(true);
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -56,6 +60,7 @@ export default function HomeScreen({ navigation }) {
       const suffix = hours >= 12 ? "PM" : "AM";
       const formattedHours = (hours % 12 || 12).toString().padStart(2, "0");
       setCurrentTime(`${formattedHours}:${minutes} ${suffix}`);
+      setLoadingTime(false);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -92,7 +97,9 @@ export default function HomeScreen({ navigation }) {
           ]}
         >
           <View style={styles.greyLine} />
-          <Text style={styles.time}>{currentTime}</Text>
+          <WithLoader loading={loadingTime}>
+            <Text style={styles.time}>{currentTime}</Text>
+          </WithLoader>
 
           <View style={styles.actionCard}>
             <TouchableOpacity
@@ -146,9 +153,11 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Kalender</Text>
-            <Text style={styles.calendarPlaceholder}>
+            <WithLoader loading={loadingTime}>
+            <View style={styles.calendarPlaceholder}>
               <CalendarWithHoliday />
-            </Text>
+            </View>
+            </WithLoader>
           </View>
         </Animated.View>
       </ScrollView>

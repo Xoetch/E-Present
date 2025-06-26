@@ -27,6 +27,7 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: "#2E7BE8",
         tabBarInactiveTintColor: "gray",
+         tabBarPressColor: "transparent",
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === "Home") {

@@ -19,10 +19,8 @@ export default function CameraScreen() {
       const hours = now.getHours().toString().padStart(2, "0");
       const minutes = now.getMinutes().toString().padStart(2, "0");
       const seconds = now.getSeconds().toString().padStart(2, "0");
-      const formattedTime = `${hours}:${minutes}:${seconds}`;
-      setCurrentTime(formattedTime);
+      setCurrentTime(`${hours}:${minutes}:${seconds}`);
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -33,17 +31,11 @@ export default function CameraScreen() {
   }, [permission]);
 
   if (!permission) return <View style={styles.container} />;
-
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={styles.permissionButton}
-        >
+        <Text style={styles.message}>We need your permission to show the camera</Text>
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
           <Text style={{ color: "#fff" }}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -55,15 +47,14 @@ export default function CameraScreen() {
   }
 
   return (
-    <View style={[styles.wrapper, {paddingTop: insets.top}]}>
-      {/* Bagian atas: peringatan */}
+    <View style={[styles.wrapper, { paddingTop: insets.top }]}>
+      {/* Header peringatan */}
       <View style={styles.headerContainer}>
         <View style={styles.warningBox}>
           <View style={styles.warningHeader}>
             <Ionicons name="information-circle" size={20} color="#F44336" />
             <Text style={styles.warningTitle}> Peringatan</Text>
           </View>
-
           <Text style={styles.warningText}>
             1. Pastikan wajah terlihat jelas ketika melakukan absensi.{"\n"}
             2. Pastikan GPS dan Kamera On dan bisa diakses oleh aplikasi.
@@ -76,13 +67,12 @@ export default function CameraScreen() {
         <CameraView style={styles.camera} facing={facing} flash={flash}>
           <View style={styles.cameraOverlay}>
             <Text style={styles.cameraTime}>{currentTime}</Text>
-            <View style={styles.frameBox} />
           </View>
         </CameraView>
       </View>
 
-      {/* Footer Actions */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
+      {/* Footer */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
@@ -168,13 +158,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-
   footer: {
     backgroundColor: "#fff",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingTop: 12,
   },
   captureButton: {
     backgroundColor: "#2E7BE8",
@@ -183,5 +172,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 12, // ✅ Tambah jarak ke bawah tombol kamera
   },
 });

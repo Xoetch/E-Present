@@ -17,7 +17,11 @@ const attendanceData = [
   { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
   { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
   { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-  { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
+  { id: "6", type: "Masuk Kerja", time: "05:02 PM", date: "2025-06-12" },
+  { id: "7", type: "Pulang Kerja", time: "05:02 PM", date: "2025-06-15" },
+  { id: "8", type: "Masuk Kerja", time: "05:02 PM", date: "2025-07-16" },
+  { id: "9", type: "Pulang Kerja", time: "05:02 PM", date: "2025-06-18" },
+  { id: "10", type: "Masuk Kerja", time: "05:02 PM", date: "2025-06-23" },
 ];
 
 const months = [
