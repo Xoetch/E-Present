@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import Modal from "react-native-modal";
 import * as ImagePicker from "expo-image-picker";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTranslation } from "react-i18next";
 
 export default function FormizinPopup({ visible, onClose }) {
   const [startDate, setStartDate] = useState(new Date());
@@ -20,12 +21,33 @@ export default function FormizinPopup({ visible, onClose }) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [jenis, setJenis] = useState(null);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
-    { label: "Sakit", value: "sakit" },
-    { label: "Izin", value: "izin" },
-    { label: "Cuti", value: "cuti" },
-  ]);
+  const { t, i18n } = useTranslation();
+
+  const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
+
+  useEffect(() => {
+    setItems([
+      { label: t("form.jenis.sakit"), value: "sakit" },
+      { label: t("form.jenis.izin"), value: "izin" },
+      { label: t("form.jenis.cuti"), value: "cuti" },
+    ]);
+  }, [t, i18n.language]);
+
+  const resetForm = () => {
+    setStartDate(new Date());
+    setEndDate(new Date());
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+    setJenis(null);
+    setOpen(false);
+    setImage(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -67,9 +89,9 @@ export default function FormizinPopup({ visible, onClose }) {
     >
       <View style={styles.container}>
         <View style={styles.topBar} />
-        <Text style={styles.title}>Pengajuan Izin</Text>
+        <Text style={styles.title}>{t("form.title")}</Text>
 
-        <Text style={styles.label}>Tanggal Awal</Text>
+        <Text style={styles.label}>{t("form.tglAwal")}</Text>
         <TouchableOpacity
           style={styles.input}
           onPress={() => setShowStartPicker(true)}
@@ -86,7 +108,7 @@ export default function FormizinPopup({ visible, onClose }) {
           />
         )}
 
-        <Text style={styles.label}>Tanggal Akhir</Text>
+        <Text style={styles.label}>{t("form.tglAkhir")}</Text>
         <TouchableOpacity
           style={styles.input}
           onPress={() => setShowEndPicker(true)}
@@ -103,7 +125,7 @@ export default function FormizinPopup({ visible, onClose }) {
           />
         )}
 
-        <Text style={styles.label}>Jenis Izin</Text>
+        <Text style={styles.label}>{t("form.jenis.title")}</Text>
         <DropDownPicker
           open={open}
           value={jenis}
@@ -113,26 +135,27 @@ export default function FormizinPopup({ visible, onClose }) {
           setItems={setItems}
           style={styles.dropdown}
           dropDownContainerStyle={styles.dropdownContainer}
+          placeholder={t("form.jenis.default")}
         />
 
-        <Text style={styles.label}>Bukti Foto</Text>
+        <Text style={styles.label}>{t("form.bukti")}</Text>
         <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
           {image ? (
             <Image source={{ uri: image }} style={styles.image} />
           ) : (
-            <Text style={{ color: "#fff" }}>Pilih Gambar</Text>
+            <Text style={{ color: "#fff" }}>{t("form.img")}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.submitText}>Ajukan</Text>
+          <Text style={styles.submitText}>{t("form.btnConfirm")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onClose}
+          onPress={handleClose}
           style={{ marginTop: 12, alignSelf: "center" }}
         >
-          <Text style={{ color: "#2E7BE8" }}>Tutup</Text>
+          <Text style={{ color: "#2E7BE8" }}>{t("form.btnClose")}</Text>
         </TouchableOpacity>
       </View>
     </Modal>

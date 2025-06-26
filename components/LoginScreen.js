@@ -65,7 +65,7 @@ export default function LoginScreen() {
               resizeMode="cover"
             >
               <Animated.View style={[styles.formContainer, { transform: [{ translateY: formPosition }] }]}>
-                <Text style={styles.welcome}>{t('login.title')}</Text>
+                <Text style={styles.welcome}>{t('general.welcome')}</Text>
 
                 <TextInput
                   placeholder={t('login.username')}
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     alignItems: 'center',
+    paddingBottom: 50,
   },
   welcome: {
     fontSize: 20,

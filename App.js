@@ -42,7 +42,7 @@ function MainTabs() {
         },
         tabBarLabelStyle: { fontSize: 12, paddingBottom: 4 },
         tabBarStyle: {
-          height: 60 + insets.bottom,
+          height: 75 + insets.bottom,
           paddingBottom: 6 + insets.bottom,
           paddingTop: 6,
         },

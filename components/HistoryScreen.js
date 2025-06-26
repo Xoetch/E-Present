@@ -86,7 +86,7 @@ export default function HistoryScreen() {
     const isAllYear = selectedYear === "All";
     if (isAllMonth && isAllYear) return t("history.semuaWaktu");
     if (!isAllMonth && isAllYear) return `${months[parseInt(selectedMonth)]}`;
-    if (isAllMonth && !isAllYear) return `Tahun ${selectedYear}`;
+    if (isAllMonth && !isAllYear) return `${selectedYear}`;
     return `${months[parseInt(selectedMonth)]} ${selectedYear}`;
   };
 
@@ -182,11 +182,11 @@ export default function HistoryScreen() {
             >
               <Picker.Item label={t("general.semua")} value="All" />
               <Picker.Item
-                label={t("general.masuk") + " Kerja"}
+                label={t("general.masuk")}
                 value="Masuk Kerja"
               />
               <Picker.Item
-                label={t("general.pulang") + " Kerja"}
+                label={t("general.pulang")}
                 value="Pulang Kerja"
               />
               <Picker.Item

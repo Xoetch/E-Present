@@ -1,17 +1,17 @@
 {
   "general": {
     "loading": "Loading...",
-    "masuk": "Clock In",
-    "pulang": "Clock Out",
-    "absen": "Take Attendance",
-    "izin": "Leave Request",
-    "sakit": "Sick Leave",
+    "masuk": "Check In",
+    "pulang": "Check Out",
+    "absen": "Absent",
+    "izin": "Permission",
+    "sakit": "Sick",
     "cuti": "Leave",
-    "alfa": "Unexcused",
+    "alfa": "Alpha",
+    "welcome": "Welcome to E-Present!",
     "semua": "All"
   },
   "home": {
-    "welcome": "Welcome to E-Present!",
     "staistik": "Attendance Statistics",
     "history": "Attendance History",
     "lihat": "View More",
@@ -23,14 +23,13 @@
     "profile": "Profile"
   },
   "login": {
-    "title": "Welcome!",
     "username": "Username",
     "password": "Password",
     "login": "Login",
     "forgor": "Forgot Password?"
   },
   "profile": {
-    "name": "Worker Profile",
+    "name": "Employee Profile",
     "workplace": "Workplace",
     "shift": "Work Shift",
     "Localization": "Language Settings",
@@ -40,35 +39,42 @@
   },
   "history": {
     "title": "Attendance History",
-    "blank": "No attendance records found this month.",
+    "blank": "No attendance records for this month.",
     "bulan": "Month",
     "tahun": "Year",
     "jenis": "Attendance Type",
     "btn": "Apply",
-    "tidakMasuk": "Not Attended",
+    "tidakMasuk": "Did Not Attend",
     "semuaWaktu": "All Time"
   },
   "notif": {},
   "camera": {
-    "warn": "Attention!",
-    "desc1": "Ensure your camera is active and facing your face.",
-    "desc2": "Make sure your GPS is turned on and you're at your work location."
+    "warn": "Warning!",
+    "desc1": "Make sure your camera is active and facing your face.",
+    "desc2": "Make sure your GPS is active and you are at your work location"
   },
   "form": {
-    "title": "Leave Request",
+    "title": "Permission Request",
     "tglAwal": "Start Date",
     "tglAkhir": "End Date",
-    "jenis": "Leave Type",
-    "bukti": "Proof of Leave",
-    "btnConfirm": "Submit Request",
-    "btnClose": "Close"
+    "bukti": "Permission Proof",
+    "img": "Click to Upload Image",
+    "btnConfirm": "Submit",
+    "btnClose": "Close",
+    "jenis": {
+      "title": "Permission Type",
+      "izin": "Permission",
+      "sakit": "Sick",
+      "cuti": "Leave",
+      "default": "Select Permission Type"
+    }
   },
   "result": {
     "error": "FAILED!",
     "success": "SUCCESS!",
-    "desc1": "You may now close this page.",
-    "desc2": "Please wait, your request is being processed...",
-    "desc3": "Uh oh... Something went wrong. Please try again later or contact admin."
+    "desc1": "you can close this page.",
+    "desc2": "please wait, the system is processing your request...",
+    "desc3": "Uh Oh... It seems an error occurred. Please try again later or contact admin."
   },
   "months": {
     "january": "January",

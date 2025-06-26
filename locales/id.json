@@ -8,10 +8,10 @@
     "sakit": "Sakit",
     "cuti": "Cuti",
     "alfa": "Alfa",
+    "welcome": "Selamat Datang di E-Present!",
     "semua": "Semua"
   },
   "home": {
-    "welcome": "Selamat Datang di E-Present!",
     "staistik": "Statistik Kehadiran",
     "history": "Riwayat Kehadiran",
     "lihat": "Lihat Selengkapnya",
@@ -23,7 +23,6 @@
     "profile": "Profil"
   },
   "login": {
-    "title": "Selamat Datang!",
     "username": "Nama Pengguna",
     "password": "Kata Sandi",
     "login": "Masuk",
@@ -58,10 +57,17 @@
     "title": "Pengajuan Izin",
     "tglAwal": "Tanggal Awal",
     "tglAkhir": "Tanggal Akhir",
-    "jenis": "Jenis Izin",
     "bukti": "Bukti Izin",
+    "img": "Klik Untuk Unggah Gambar",
     "btnConfirm": "Ajukan Izin",
-    "btnClose": "Tutup"
+    "btnClose": "Tutup",
+    "jenis": {
+      "title": "Jenis Izin",
+      "izin": "Izin",
+      "sakit": "Sakit",
+      "cuti": "Cuti",
+      "default": "Pilih Jenis Izin"
+    }
   },
   "result": {
     "error": "GAGAL!",

@@ -124,7 +124,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.profileImage}
           />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.welcome}>{t("home.welcome")}</Text>
+            <Text style={styles.welcome}>{t("general.welcome")}</Text>
             <Text style={styles.userName}>Kaiser Wilhelm Althafazu</Text>
           </View>
         </View>
