@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  View,
-  Text,
   FlatList,
-  StyleSheet,
-  TouchableOpacity,
   Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
@@ -28,6 +31,22 @@ const months = [
 
 export default function HistoryScreen() {
   const currentDate = new Date();
+  const { t, i18n } = useTranslation();
+
+  const months = [
+    t("months.january"),
+    t("months.february"),
+    t("months.march"),
+    t("months.april"),
+    t("months.may"),
+    t("months.june"),
+    t("months.july"),
+    t("months.august"),
+    t("months.september"),
+    t("months.october"),
+    t("months.november"),
+    t("months.december"),
+  ];
 
   // 1. State untuk id_pengguna
   const [userId, setUserId] = useState(null);
@@ -176,9 +195,9 @@ export default function HistoryScreen() {
   const getMonthYearLabel = () => {
     const isAllMonth = selectedMonth === "All";
     const isAllYear = selectedYear === "All";
-    if (isAllMonth && isAllYear) return "Semua Waktu";
-    if (!isAllMonth && isAllYear) return `Bulan ${months[parseInt(selectedMonth)]}`;
-    if (isAllMonth && !isAllYear) return `Tahun ${selectedYear}`;
+    if (isAllMonth && isAllYear) return t("history.semuaWaktu");
+    if (!isAllMonth && isAllYear) return `${months[parseInt(selectedMonth)]}`;
+    if (isAllMonth && !isAllYear) return `${selectedYear}`;
     return `${months[parseInt(selectedMonth)]} ${selectedYear}`;
   };
 
@@ -187,7 +206,12 @@ export default function HistoryScreen() {
     const isMasuk = item.status_kehadiran === "Masuk Kerja";
     return (
       <View style={styles.itemContainer}>
-        <View style={[styles.circleIcon, { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" }]}>
+        <View
+          style={[
+            styles.circleIcon,
+            { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
+          ]}
+        >
           <Ionicons name="time" size={18} color="#fff" />
         </View>
         <View style={styles.textContainer}>
@@ -228,44 +252,63 @@ export default function HistoryScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Filter</Text>
 
-            <Text style={styles.modalSubtitle}>Bulan</Text>
+            <Text style={styles.modalSubtitle}>{t("history.bulan")}</Text>
             <Picker
               selectedValue={tempMonth}
               onValueChange={(itemValue) => setTempMonth(itemValue)}
             >
-              <Picker.Item label="Semua" value="All" />
+              <Picker.Item label={t("general.semua")} value="All" />
               {months.map((month, index) => (
-                <Picker.Item key={index} label={month} value={index.toString()} />
+                <Picker.Item
+                  key={index}
+                  label={month}
+                  value={index.toString()}
+                />
               ))}
             </Picker>
 
-            <Text style={styles.modalSubtitle}>Tahun</Text>
+            <Text style={styles.modalSubtitle}>{t("history.tahun")}</Text>
             <Picker
               selectedValue={tempYear}
               onValueChange={(itemValue) => setTempYear(itemValue)}
             >
-              <Picker.Item label="Semua" value="All" />
+              <Picker.Item label={t("general.semua")} value="All" />
               {Array.from({ length: 10 }, (_, i) => {
                 const year = 2020 + i;
                 return (
-                  <Picker.Item key={year} label={year.toString()} value={year.toString()} />
+                  <Picker.Item
+                    key={year}
+                    label={year.toString()}
+                    value={year.toString()}
+                  />
                 );
               })}
             </Picker>
 
-            <Text style={styles.modalSubtitle}>Jenis Absensi</Text>
+            <Text style={styles.modalSubtitle}>{t("history.jenis")}</Text>
             <Picker
               selectedValue={tempType}
               onValueChange={(itemValue) => setTempType(itemValue)}
             >
-              <Picker.Item label="Semua" value="All" />
-              <Picker.Item label="Masuk Kerja" value="Masuk Kerja" />
-              <Picker.Item label="Pulang Kerja" value="Pulang Kerja" />
-              <Picker.Item label="Tidak Masuk" value="Tidak Masuk" />
+              <Picker.Item label={t("general.semua")} value="All" />
+              <Picker.Item
+                label={t("general.masuk")}
+                value="Masuk Kerja"
+              />
+              <Picker.Item
+                label={t("general.pulang")}
+                value="Pulang Kerja"
+              />
+              <Picker.Item
+                label={t("history.tidakMasuk")}
+                value="Tidak Masuk"
+              />
             </Picker>
 
             <TouchableOpacity style={styles.modalButton} onPress={applyFilter}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Terapkan</Text>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                {t("history.btn")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -273,7 +316,8 @@ export default function HistoryScreen() {
 
       {/* List */}
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>Riwayat Absensi</Text>
+        <View style={styles.greyLine} />
+        <Text style={styles.title}>{t("history.title")}</Text>
         <FlatList
           data={filteredData}
           keyExtractor={(item, idx) => item.id ? item.id.toString() : idx.toString()}
@@ -281,7 +325,7 @@ export default function HistoryScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Tidak ada data di bulan ini</Text>
+            <Text style={styles.emptyText}>{t("history.blank")}</Text>
           }
         />
       </View>
@@ -330,11 +374,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#6B7280",
     alignSelf: "center",
-    marginBottom: 16,
+    marginVertical: 16,
   },
   listContent: { paddingBottom: 80 },
   itemContainer: {
@@ -393,5 +437,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     alignItems: "center",
+  },
+  greyLine: {
+    height: 6,
+    width: 80,
+    backgroundColor: "#ccc",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 8,
   },
 });

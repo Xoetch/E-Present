@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import './locales/i18n';
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -41,7 +43,7 @@ function MainTabs() {
         },
         tabBarLabelStyle: { fontSize: 12, paddingBottom: 4 },
         tabBarStyle: {
-          height: 60 + insets.bottom,
+          height: 75 + insets.bottom,
           paddingBottom: 6 + insets.bottom,
           paddingTop: 6,
         },
@@ -61,6 +63,8 @@ export default function App() {
     "InriaSans-Italic": require("./assets/fonts/Inria_Sans/InriaSans-Italic.ttf"),
     "InriaSans-BoldItalic": require("./assets/fonts/Inria_Sans/InriaSans-BoldItalic.ttf"),
   });
+
+  const {t, i18n} = useTranslation();
 
   useEffect(() => {
     if (fontsLoaded) {

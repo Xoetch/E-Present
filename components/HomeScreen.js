@@ -1,7 +1,8 @@
 // HomeScreen.js
 
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -15,29 +16,34 @@ import {
 import { PieChart } from "react-native-chart-kit";
 import FormizinPopup from "./FormizinScreen";
 import CalendarWithHoliday from "./Calendar";
+import { useTranslation } from "react-i18next";
+
 import WithLoader from "../utils/Loader";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 const screenWidth = Dimensions.get("window").width;
+const screenHeight = Dimensions.get("window").height;
 
 export default function HomeScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
+
   const chartData = [
     {
-      name: "Hadir",
+      name: t("general.masuk"), 
       population: 45,
       color: "#2E7BE8",
       legendFontColor: "#444",
       legendFontSize: 12,
     },
     {
-      name: "Izin",
+      name: t('general.izin'),
       population: 18,
       color: "#FEC107",
       legendFontColor: "#444",
       legendFontSize: 12,
     },
     {
-      name: "Alpa",
+      name: t('general.alfa'),
       population: 36,
       color: "#F44336",
       legendFontColor: "#444",
@@ -53,9 +59,55 @@ export default function HomeScreen({ navigation }) {
       jam_shift: "",
       foto_pengguna: "",
     });
-  const animatedValue = useRef(
-    new Animated.Value(Dimensions.get("window").height)
-  ).current;
+  const animatedValue = useRef(new Animated.Value(screenHeight)).current;
+  const isInitialMount = useRef(true);
+
+  // Handle navigation with animation
+  const handleNavigation = (screenName) => {
+    // Animate down before navigation
+    Animated.timing(animatedValue, {
+      toValue: screenHeight,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      // Navigate after animation completes
+      navigation.navigate(screenName);
+    });
+  };
+
+  // Handle focus/blur events for screen transitions
+  useFocusEffect(
+    useCallback(() => {
+      // Screen is focused - animate up
+      if (isInitialMount.current) {
+        // Initial mount - delay slightly for better UX
+        setTimeout(() => {
+          Animated.timing(animatedValue, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
+        }, 100);
+        isInitialMount.current = false;
+      } else {
+        // Returning to screen - animate up immediately
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      }
+
+      return () => {
+        // Screen is blurred - animate down
+        Animated.timing(animatedValue, {
+          toValue: screenHeight,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      };
+    }, [animatedValue])
+  );
 
   const [loadingTime, setLoadingTime] = useState(true);
 
@@ -113,7 +165,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.profileImage}
           />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.welcome}>Selamat datang di E-Present</Text>
+            <Text style={styles.welcome}>{t("general.welcome")}</Text>
             <Text style={styles.userName}>{userData.nama_lengkap}</Text>
           </View>
         </View>
@@ -132,10 +184,10 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.actionCard}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => navigation.navigate("CameraScreen")}
+              onPress={() => handleNavigation("CameraScreen")}
             >
               <Ionicons name="scan" size={24} color="#2E7BE8" />
-              <Text style={styles.actionLabel}>Absen</Text>
+              <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -147,12 +199,12 @@ export default function HomeScreen({ navigation }) {
                 size={24}
                 color="#2E7BE8"
               />
-              <Text style={styles.actionLabel}>Izin</Text>
+              <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Statistik</Text>
+            <Text style={styles.cardTitle}>{t("home.staistik")}</Text>
             <PieChart
               data={chartData}
               width={screenWidth - 32}
@@ -172,20 +224,21 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.cardTitle}>Riwayat Absensi</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Riwayat")}>
-                <Text style={styles.link}>Lihat Selengkapnya ›</Text>
+              <Text style={styles.cardTitle}>{t('home.history')}</Text>
+              <TouchableOpacity onPress={() => handleNavigation("Riwayat")}>
+                <Text style={styles.link}>{t('home.lihat')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('home.calendar')}</Text>
+            <Text style={styles.calendarPlaceholder}>
             <Text style={styles.cardTitle}>Kalender</Text>
-            <WithLoader loading={loadingTime}>
-            <View style={styles.calendarPlaceholder}>
+            {/* <WithLoader loading={loadingTime}> */}
+            {/* <View style={styles.calendarPlaceholder}> */}
               <CalendarWithHoliday />
-            </View>
-            </WithLoader>
+            </Text>
           </View>
         </Animated.View>
       </ScrollView>
@@ -198,7 +251,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#2E7BE8" },
   blueBackground: {
     position: "absolute",
@@ -241,7 +294,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "bold",
-    marginVertical: 8,
+    marginVertical: 16,
     color: "#6B7280",
   },
   actionCard: {

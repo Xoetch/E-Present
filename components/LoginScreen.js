@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from "react-i18next";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -23,6 +24,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const formPosition = useRef(new Animated.Value(0)).current;
+
+  const { t, i18n } = useTranslation();
 
   const [fontsLoaded] = useFonts({
     'RobotoCondensed-ExtraBoldItalic': require('../assets/fonts/Roboto_Condensed/static/RobotoCondensed-ExtraBoldItalic.ttf'),
@@ -108,10 +111,10 @@ export default function LoginScreen() {
               resizeMode="cover"
             >
               <Animated.View style={[styles.formContainer, { transform: [{ translateY: formPosition }] }]}>
-                <Text style={styles.welcome}>Welcome!</Text>
+                <Text style={styles.welcome}>{t('general.welcome')}</Text>
 
                 <TextInput
-                  placeholder="Username"
+                  placeholder={t('login.username')}
                   placeholderTextColor="#999"
                   style={styles.input}
                   value={username}
@@ -120,7 +123,7 @@ export default function LoginScreen() {
 
                 <View style={styles.passwordContainer}>
                   <TextInput
-                    placeholder="Password"
+                    placeholder={t('login.password')}
                     placeholderTextColor="#999"
                     style={styles.passwordInput}
                     value={password}
@@ -137,11 +140,11 @@ export default function LoginScreen() {
                 </View>
 
                 <TouchableOpacity>
-                  <Text style={styles.forgot}>Forgot password?</Text>
+                <Text style={styles.forgot}>{ t('login.forgor') }</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                  <Text style={styles.loginText}>Login</Text>
+                <Text style={styles.loginText}>{ t('login.login') }</Text>
                 </TouchableOpacity>
               </Animated.View>
             </ImageBackground>
@@ -166,6 +169,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     alignItems: 'center',
+    paddingBottom: 50,
   },
   welcome: {
     fontSize: 20,
