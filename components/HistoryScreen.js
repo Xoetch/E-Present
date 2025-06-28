@@ -56,6 +56,27 @@ export default function HistoryScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
 
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "-";
+    // Jika sudah dalam format HH:mm, langsung return
+    if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+    // Jika format jam:menit:detik, ambil jam dan menit
+    if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0,5);
+    // Jika format 09:00 AM atau 05:00 PM
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
+    if (match) {
+      let hour = parseInt(match[1], 10);
+      const minute = match[2];
+      const ampm = match[3];
+      if (ampm) {
+        if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
+        if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
+      }
+      return `${hour.toString().padStart(2, "0")}:${minute}`;
+    }
+    return timeStr; // fallback
+  };
+
   // 1. Ambil id_pengguna dari AsyncStorage
   useEffect(() => {
     const fetchUserId = async () => {
@@ -172,11 +193,9 @@ export default function HistoryScreen() {
         <View style={styles.textContainer}>
           <Text style={styles.typeText}>{item.status_kehadiran}</Text>
           <Text style={styles.dateText}>{item.tanggal}</Text>
-          <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
-        </View>
-        <View>
-          <Text style={[styles.timeText, { color: "#4CAF50" }]}>Masuk: {item.jam_masuk}</Text>
-          <Text style={[styles.timeText, { color: "#F44336" }]}>Pulang: {item.jam_keluar}</Text>
+          <Text style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}>
+          {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}        </Text>
+        <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
         </View>
       </View>
     );
