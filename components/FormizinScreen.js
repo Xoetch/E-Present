@@ -6,13 +6,16 @@ import {
   StyleSheet,
   Image,
   Platform,
-  Button,
+  TextInput,
+  Alert
 } from "react-native";
 import Modal from "react-native-modal";
 import * as ImagePicker from "expo-image-picker";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTranslation } from "react-i18next";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 export default function FormizinPopup({ visible, onClose }) {
   const [startDate, setStartDate] = useState(new Date());
@@ -20,6 +23,7 @@ export default function FormizinPopup({ visible, onClose }) {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [jenis, setJenis] = useState(null);
+  const [keterangan, setKeterangan] = useState("");
   const [open, setOpen] = useState(false);
   const { t, i18n } = useTranslation();
 
@@ -42,6 +46,7 @@ export default function FormizinPopup({ visible, onClose }) {
     setJenis(null);
     setOpen(false);
     setImage(null);
+    setKeterangan("");
   };
 
   const handleClose = () => {
@@ -78,6 +83,58 @@ export default function FormizinPopup({ visible, onClose }) {
       month: "2-digit",
       year: "numeric",
     });
+  
+
+    const submitIzin = async () => {
+      if (!startDate || !endDate || !jenis || !image) {
+      Alert.alert('Error', 'Semua field wajib diisi dan foto harus diambil');
+        return;
+      }
+  
+      let id_pengguna = null;
+      try {
+        const userDataString = await AsyncStorage.getItem('userData');
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          id_pengguna = userData.id_pengguna;
+        }
+      } catch (e) {
+        Alert.alert('Error', 'Gagal mengambil data pengguna');
+        return;
+      }
+
+      if (!id_pengguna) {
+        Alert.alert('Error', 'ID Pengguna tidak ditemukan');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: image,
+        name: 'bukti_izin.jpg',
+        type: 'image/jpeg',
+      });
+
+      formData.append('izin', JSON.stringify({
+        tanggal_awal: startDate.toISOString(),
+        tanggal_akhir: endDate.toISOString(),
+        jenis_izin: jenis,
+        id_pengguna: id_pengguna,
+        keterangan: keterangan
+      }));
+
+      try {
+        const res = await axios.post('http://10.1.51.153:8080/reqPermit/addReqPermit', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        Alert.alert('Sukses', res.data.message);
+      } catch (err) {
+        Alert.alert('Error', 'Gagal mengirim data absensi');
+      }
+      resetForm();
+    };
 
   return (
     <Modal
@@ -147,7 +204,20 @@ export default function FormizinPopup({ visible, onClose }) {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitButton}>
+        <Text style={styles.label}>Keterangan</Text>
+        <TextInput
+          style={styles.keteranganInput}
+          placeholder="Masukkan keterangan tambahan"
+          value={keterangan}
+          onChangeText={setKeterangan}
+          multiline
+          numberOfLines={4}
+        />
+
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={submitIzin}
+        >
           <Text style={styles.submitText}>{t("form.btnConfirm")}</Text>
         </TouchableOpacity>
 
@@ -236,5 +306,16 @@ const styles = StyleSheet.create({
   submitText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  keteranganInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 80,
+    textAlignVertical: "top",
+    marginBottom: 8,
+    backgroundColor: "#f9f9f9",
   },
 });
