@@ -9,7 +9,9 @@
     "cuti": "Cuti",
     "alfa": "Alfa",
     "welcome": "Selamat Datang di E-Present!",
-    "semua": "Semua"
+    "semua": "Semua",
+    "yes": "Ya",
+    "no": "Tidak"
   },
   "home": {
     "staistik": "Statistik Kehadiran",
@@ -35,7 +37,8 @@
     "Localization": "Pengaturan Bahasa",
     "eng": "Bahasa Inggris",
     "ind": "Bahasa Indonesia",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "Konfirmasi": "Anda yakin ingin keluar?"
   },
   "history": {
     "title": "Riwayat Absensi",
