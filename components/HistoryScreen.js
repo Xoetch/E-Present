@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,19 +14,20 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import API from "../utils/ApiConfig";
 
-// Dummy data absensi
-// const attendanceData = [
-//   { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-//   { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
-//   { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-//   { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
-//   { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-//   { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
-// ];
 
 const months = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
 ];
 
 export default function HistoryScreen() {
@@ -55,16 +57,17 @@ export default function HistoryScreen() {
     { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
     { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
     { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-    { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
-    { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-    { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
   ]);
 
   // 5. State untuk hasil API
   const [historyData, setHistoryData] = useState([]);
 
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
-  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState(
+    currentDate.getMonth().toString()
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    currentDate.getFullYear().toString()
+  );
   const [selectedType, setSelectedType] = useState("All");
 
   const [tempMonth, setTempMonth] = useState(selectedMonth);
@@ -79,7 +82,7 @@ export default function HistoryScreen() {
     // Jika sudah dalam format HH:mm, langsung return
     if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
     // Jika format jam:menit:detik, ambil jam dan menit
-    if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0,5);
+    if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0, 5);
     // Jika format 09:00 AM atau 05:00 PM
     const match = timeStr.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
     if (match) {
@@ -99,13 +102,13 @@ export default function HistoryScreen() {
   useEffect(() => {
     const fetchUserId = async () => {
       try {
-        const dataString = await AsyncStorage.getItem('userData');
+        const dataString = await AsyncStorage.getItem("userData");
         if (dataString) {
           const data = JSON.parse(dataString);
           setUserId(data.id_pengguna);
         }
       } catch (e) {
-        console.log('Gagal mengambil userData:', e);
+        console.log("Gagal mengambil userData:", e);
       }
     };
     fetchUserId();
@@ -113,7 +116,7 @@ export default function HistoryScreen() {
 
   // 3 & 4. Fetch data history dari API jika userId sudah ada
   useEffect(() => {
-    console.log('Fetching history for userId:', userId);
+    console.log("Fetching history for userId:", userId);
     const fetchHistory = async () => {
       if (!userId) return;
       try {
@@ -126,7 +129,7 @@ export default function HistoryScreen() {
           setHistoryData([]);
         }
       } catch (e) {
-        console.log('Gagal mengambil history:', e);
+        console.log("Gagal mengambil history:", e);
         setHistoryData([]);
       }
     };
@@ -136,9 +139,9 @@ export default function HistoryScreen() {
   useEffect(() => {
     // 1. Filter hanya status_kehadiran "Hadir"
     const hadirData = Array.isArray(historyData)
-      ? historyData.filter(item => item.status_kehadiran === "Hadir")
+      ? historyData.filter((item) => item.status_kehadiran === "Hadir")
       : [];
-  
+
     // 2 & 3. Konversi setiap data menjadi 2 data (Masuk Kerja & Pulang Kerja)
     let converted = [];
     hadirData.forEach((item, idx) => {
@@ -161,10 +164,10 @@ export default function HistoryScreen() {
         });
       }
     });
-  
+
     // 4. Urutkan: data pertama dari API jadi id terakhir setelah dikonversi, dan sebaliknya
     converted = converted.reverse();
-  
+
     setAttendanceData(converted);
   }, [historyData]);
 
@@ -172,9 +175,12 @@ export default function HistoryScreen() {
   const applyFilter = () => {
     const filtered = historyData.filter((item) => {
       const itemDate = new Date(item.tanggal);
-      const matchMonth = tempMonth === "All" || itemDate.getMonth() === parseInt(tempMonth);
-      const matchYear = tempYear === "All" || itemDate.getFullYear() === parseInt(tempYear);
-      const matchType = tempType === "All" || item.status_kehadiran === tempType;
+      const matchMonth =
+        tempMonth === "All" || itemDate.getMonth() === parseInt(tempMonth);
+      const matchYear =
+        tempYear === "All" || itemDate.getFullYear() === parseInt(tempYear);
+      const matchType =
+        tempType === "All" || item.status_kehadiran === tempType;
       return matchMonth && matchYear && matchType;
     });
 
@@ -216,9 +222,15 @@ export default function HistoryScreen() {
         <View style={styles.textContainer}>
           <Text style={styles.typeText}>{item.status_kehadiran}</Text>
           <Text style={styles.dateText}>{item.tanggal}</Text>
-          <Text style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}>
-          {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}        </Text>
-        <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
+          <Text
+            style={[
+              styles.timeText,
+              { color: isMasuk ? "#4CAF50" : "#F44336" },
+            ]}
+          >
+            {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}{" "}
+          </Text>
+          <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
         </View>
       </View>
     );
@@ -290,14 +302,8 @@ export default function HistoryScreen() {
               onValueChange={(itemValue) => setTempType(itemValue)}
             >
               <Picker.Item label={t("general.semua")} value="All" />
-              <Picker.Item
-                label={t("general.masuk")}
-                value="Masuk Kerja"
-              />
-              <Picker.Item
-                label={t("general.pulang")}
-                value="Pulang Kerja"
-              />
+              <Picker.Item label={t("general.masuk")} value="Masuk Kerja" />
+              <Picker.Item label={t("general.pulang")} value="Pulang Kerja" />
               <Picker.Item
                 label={t("history.tidakMasuk")}
                 value="Tidak Masuk"
@@ -319,7 +325,9 @@ export default function HistoryScreen() {
         <Text style={styles.title}>{t("history.title")}</Text>
         <FlatList
           data={filteredData}
-          keyExtractor={(item, idx) => item.id ? item.id.toString() : idx.toString()}
+          keyExtractor={(item, idx) =>
+            item.id ? item.id.toString() : idx.toString()
+          }
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

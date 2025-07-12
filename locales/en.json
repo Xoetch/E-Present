@@ -9,7 +9,9 @@
     "cuti": "Leave",
     "alfa": "Alpha",
     "welcome": "Welcome to E-Present!",
-    "semua": "All"
+    "semua": "All",
+    "yes": "Yes",
+    "no": "No"
   },
   "home": {
     "staistik": "Attendance Statistics",
@@ -35,7 +37,8 @@
     "Localization": "Language Settings",
     "eng": "English",
     "ind": "Indonesian",
-    "logout": "Logout"
+    "logout": "Logout",
+    "Konfirmasi": "Are you sure want to logout?"
   },
   "history": {
     "title": "Attendance History",
