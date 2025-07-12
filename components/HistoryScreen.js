@@ -10,8 +10,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import API from "../utils/ApiConfig";
 
 
@@ -76,6 +76,17 @@ export default function HistoryScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
+
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
+  const [selectedPhotoType, setSelectedPhotoType] = useState(null); // "masuk", "pulang", "izin"
+
+  const handleItemPress = async (item) => {
+    console.log("ITEM SELECTED:", item);
+    setSelectedItem(item);
+    setSelectedPhotoType(null);
+    setPhotoModalVisible(true);
+  };
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "-";
@@ -210,29 +221,31 @@ export default function HistoryScreen() {
   const renderItem = ({ item }) => {
     const isMasuk = item.status_kehadiran === "Masuk Kerja";
     return (
-      <View style={styles.itemContainer}>
-        <View
-          style={[
-            styles.circleIcon,
-            { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
-          ]}
-        >
-          <Ionicons name="time" size={18} color="#fff" />
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.typeText}>{item.status_kehadiran}</Text>
-          <Text style={styles.dateText}>{item.tanggal}</Text>
-          <Text
+      <TouchableOpacity onPress={() => handleItemPress(item)}>
+        <View style={styles.itemContainer}>
+          <View
             style={[
-              styles.timeText,
-              { color: isMasuk ? "#4CAF50" : "#F44336" },
+              styles.circleIcon,
+              { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
             ]}
           >
-            {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}{" "}
-          </Text>
-          <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
+            <Ionicons name="time" size={18} color="#fff" />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.typeText}>{item.status_kehadiran}</Text>
+            <Text style={styles.dateText}>{item.tanggal}</Text>
+            <Text
+              style={[
+                styles.timeText,
+                { color: isMasuk ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}{" "}
+            </Text>
+            <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -314,6 +327,99 @@ export default function HistoryScreen() {
               <Text style={{ color: "#fff", fontWeight: "bold" }}>
                 {t("history.btn")}
               </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={photoModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: 500 }]}>
+            <Text style={styles.modalTitle}>Detail Kehadiran</Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                marginVertical: 10,
+              }}
+            >
+              {/* Hanya tampilkan Bukti Masuk dan Pulang jika status bukan Izin */}
+              {selectedItem?.status_kehadiran !==
+                "Izin - menunggu persetujuan" &&
+                selectedItem?.status_kehadiran !== "Izin" && (
+                  <>
+                    {selectedItem?.bukti_kehadiran && (
+                      <TouchableOpacity
+                        onPress={() => setSelectedPhotoType("masuk")}
+                      >
+                        <Text style={{ color: "#2E7BE8", fontWeight: "bold" }}>
+                          Bukti Masuk
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {selectedItem?.bukti_kehadiran2 && (
+                      <TouchableOpacity
+                        onPress={() => setSelectedPhotoType("pulang")}
+                      >
+                        <Text style={{ color: "#2E7BE8", fontWeight: "bold" }}>
+                          Bukti Pulang
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+
+              {/* Tampilkan Bukti Izin hanya jika status mengandung "Izin" */}
+              {selectedItem?.status_kehadiran?.startsWith("Izin") &&
+                selectedItem?.buktiIzin && (
+                  <TouchableOpacity
+                    onPress={() => setSelectedPhotoType("izin")}
+                  >
+                    <Text style={{ color: "#F39C12", fontWeight: "bold" }}>
+                      Bukti Izin
+                    </Text>
+                  </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Tampilkan Foto Sesuai Pilihan */}
+            {selectedPhotoType === "masuk" && selectedItem?.bukti_kehadiran && (
+              <>
+                <Image
+                  source={{ uri: selectedItem.bukti_kehadiran }}
+                  style={styles.photo}
+                  resizeMode="contain"
+                />
+              </>
+            )}
+
+            {selectedPhotoType === "pulang" &&
+              selectedItem?.bukti_kehadiran2 && (
+                <>
+                  <Image
+                    source={{ uri: selectedItem.bukti_kehadiran2 }}
+                    style={styles.photo}
+                    resizeMode="contain"
+                  />
+                </>
+              )}
+
+            {selectedPhotoType === "izin" && selectedItem?.buktiIzin && (
+              <>
+                <Image
+                  source={{ uri: selectedItem?.buktiIzin }}
+                  style={styles.photo}
+                  resizeMode="contain"
+                />
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setPhotoModalVisible(false)}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Tutup</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -452,5 +558,12 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignSelf: "center",
     marginBottom: 8,
+  },
+  photo: {
+    width: "100%",
+    height: 180,
+    borderRadius: 10,
+    marginBottom: 12,
+    backgroundColor: "#f0f0f0",
   },
 });
