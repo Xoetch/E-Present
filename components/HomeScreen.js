@@ -42,6 +42,7 @@ export default function HomeScreen({ navigation }) {
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
   const [userData, setUserData] = useState({
+    id_pengguna: null,
     nama_lengkap: "",
     alamat_lengkap: "",
     jam_shift: "",
@@ -61,6 +62,7 @@ export default function HomeScreen({ navigation }) {
           if (dataString) {
             const data = JSON.parse(dataString);
             setUserData({
+              id_pengguna: data.id_pengguna || null,
               nama_lengkap: data.nama_lengkap || "",
               alamat_lengkap: data.alamat_lengkap || "",
               jam_shift: data.jam_shift || "",
