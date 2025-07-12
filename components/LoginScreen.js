@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from "react-i18next";
+import API from '../utils/ApiConfig';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -52,7 +53,7 @@ export default function LoginScreen() {
 
   
   const loginFetch = async () => {
-    const response = await fetch('http://10.1.51.153:8080/user/login', {
+    const response = await fetch(API.LOGIN, {
       method: 'POST',
       body: JSON.stringify({
         username: username,

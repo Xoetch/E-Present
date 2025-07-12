@@ -16,6 +16,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import API from "../utils/ApiConfig";
 
 export default function FormizinPopup({ visible, onClose }) {
   const [startDate, setStartDate] = useState(new Date());
@@ -124,7 +125,7 @@ export default function FormizinPopup({ visible, onClose }) {
       }));
 
       try {
-        const res = await axios.post('http://10.1.51.153:8080/reqPermit/addReqPermit', formData, {
+        const res = await axios.post(API.IZIN, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

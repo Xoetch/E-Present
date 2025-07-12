@@ -1,9 +1,12 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useRef} from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API from "../utils/ApiConfig";
+
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState("front");
@@ -12,6 +15,10 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const cameraRef = useRef(null);
+  const [userId, setUserId] = useState(null);
+  const [shiftId, setShiftId] = useState(null);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,6 +29,23 @@ export default function CameraScreen() {
       setCurrentTime(`${hours}:${minutes}:${seconds}`);
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+  
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const dataString = await AsyncStorage.getItem('userData');
+        if (dataString) {
+          const data = JSON.parse(dataString);
+          setUserId(data.id_pengguna);
+          setShiftId(data.id_shift); 
+        }
+      } catch (e) {
+        console.log('Gagal mengambil userData:', e);
+      }
+    };
+    fetchUserId();
   }, []);
 
   useEffect(() => {
@@ -45,6 +69,59 @@ export default function CameraScreen() {
   function toggleFlash() {
     setFlash((current) => (current === "off" ? "on" : "off"));
   }
+  
+  const handleCapture = async () => {
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: false });
+
+      // Ambil data dari AsyncStorage
+      const userDataString = await AsyncStorage.getItem("userData");
+      const userData = JSON.parse(userDataString);
+
+      const now = new Date();
+      const jam = now.toTimeString().split(' ')[0]; // "HH:mm:ss"
+      const tanggal = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+      const formData = new FormData();
+      formData.append("file", {
+        uri: photo.uri,
+        type: "image/jpeg",
+        name: `absen_${Date.now()}.jpg`,
+      });
+
+      formData.append("absensi", {
+        string: JSON.stringify({
+          id_pengguna: userData.id_pengguna,
+          jam: jam,
+          shift_kerja: userData.jam_shift
+        }),
+        name: 'absensi',
+        type: 'application/json',
+      });
+
+
+
+      const response = await fetch(API.ABSEN, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.status === 200) {
+        alert(result.message); 
+        navigation.navigate("Home");
+      } else {
+        alert("Gagal absen: " + result.message);
+      }
+    } catch (error) {
+      console.log("Capture error:", error);
+      alert("Terjadi kesalahan saat mengirim absensi");
+    }
+  };
 
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
@@ -64,7 +141,7 @@ export default function CameraScreen() {
 
       {/* Kamera */}
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing={facing} flash={flash}>
+        <CameraView  ref={cameraRef} style={styles.camera} facing={facing} flash={flash}>
           <View style={styles.cameraOverlay}>
             <Text style={styles.cameraTime}>{currentTime}</Text>
           </View>
@@ -77,7 +154,7 @@ export default function CameraScreen() {
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.captureButton}>
+        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
           <Ionicons name="camera-outline" size={28} color="#fff" />
         </TouchableOpacity>
 

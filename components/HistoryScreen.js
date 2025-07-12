@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import API from "../utils/ApiConfig";
 
 // Dummy data absensi
 // const attendanceData = [
@@ -116,7 +117,7 @@ export default function HistoryScreen() {
     const fetchHistory = async () => {
       if (!userId) return;
       try {
-        const response = await fetch(`http://10.1.51.153:8080/present/getHistory/${userId}`);
+        const response = await fetch(`${API.HISTORY}/${userId}`);
         const result = await response.json();
         // 6. Struktur data: tanggal, jam_masuk, jam_keluar, shift_kerja, status_kehadiran, bukti_kehadiran
         if (result) {
