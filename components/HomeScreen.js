@@ -225,7 +225,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <View style={styles.rowBetween}>
               <Text style={styles.cardTitle}>{t('home.history')}</Text>
-              <TouchableOpacity onPress={() => handleNavigation("Riwayat")}>
+              <TouchableOpacity onPress={() => handleNavigation("History")}>
                 <Text style={styles.link}>{t('home.lihat')}</Text>
               </TouchableOpacity>
             </View>
@@ -234,7 +234,6 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t('home.calendar')}</Text>
             <Text style={styles.calendarPlaceholder}>
-            <Text style={styles.cardTitle}>Kalender</Text>
             {/* <WithLoader loading={loadingTime}> */}
             {/* <View style={styles.calendarPlaceholder}> */}
               <CalendarWithHoliday />

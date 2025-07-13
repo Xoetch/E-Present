@@ -89,5 +89,10 @@
     "october": "Oktober",
     "november": "November",
     "december": "Desember"
+  },
+  "menu":{
+    "home": "Beranda",
+    "history": "Riwayat",
+    "profile": "Profil"
   }
 }

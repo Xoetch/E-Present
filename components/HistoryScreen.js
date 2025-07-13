@@ -9,25 +9,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
+  Image,
+  Linking
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// Dummy data absensi
-// const attendanceData = [
-//   { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-//   { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
-//   { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-//   { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
-//   { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-//   { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
-// ];
-
-const months = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-];
 
 export default function HistoryScreen() {
   const currentDate = new Date();
@@ -48,40 +34,26 @@ export default function HistoryScreen() {
     t("months.december"),
   ];
 
-  // 1. State untuk id_pengguna
+  // State management
   const [userId, setUserId] = useState(null);
-
-  // 2. Dummy data absensi jadi useState
-  const [attendanceData, setAttendanceData] = useState([
-    { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-    { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
-    { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-    { id: "4", type: "Pulang Kerja", time: "05:15 PM", date: "2024-03-10" },
-    { id: "5", type: "Masuk Kerja", time: "09:05 AM", date: "2024-04-12" },
-    { id: "6", type: "Pulang Kerja", time: "05:02 PM", date: "2024-04-12" },
-  ]);
-
-  // 5. State untuk hasil API
+  const [attendanceData, setAttendanceData] = useState([]);
   const [historyData, setHistoryData] = useState([]);
-
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedType, setSelectedType] = useState("All");
-
   const [tempMonth, setTempMonth] = useState(selectedMonth);
   const [tempYear, setTempYear] = useState(selectedYear);
   const [tempType, setTempType] = useState(selectedType);
-
   const [modalVisible, setModalVisible] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState(null);
 
+  // Format time function
   const formatTime = (timeStr) => {
-    if (!timeStr) return "-";
-    // Jika sudah dalam format HH:mm, langsung return
+    if (!timeStr || timeStr === "null") return "-";
     if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
-    // Jika format jam:menit:detik, ambil jam dan menit
     if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0,5);
-    // Jika format 09:00 AM atau 05:00 PM
     const match = timeStr.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
     if (match) {
       let hour = parseInt(match[1], 10);
@@ -93,10 +65,10 @@ export default function HistoryScreen() {
       }
       return `${hour.toString().padStart(2, "0")}:${minute}`;
     }
-    return timeStr; // fallback
+    return timeStr;
   };
 
-  // 1. Ambil id_pengguna dari AsyncStorage
+  // Fetch user ID from AsyncStorage
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -106,70 +78,62 @@ export default function HistoryScreen() {
           setUserId(data.id_pengguna);
         }
       } catch (e) {
-        console.log('Gagal mengambil userData:', e);
+        console.log('Failed to get userData:', e);
       }
     };
     fetchUserId();
   }, []);
 
-  // 3 & 4. Fetch data history dari API jika userId sudah ada
+  // Fetch history data from API
   useEffect(() => {
-    console.log('Fetching history for userId:', userId);
     const fetchHistory = async () => {
       if (!userId) return;
       try {
         const response = await fetch(`http://10.1.51.153:8080/present/getHistory/${userId}`);
         const result = await response.json();
-        // 6. Struktur data: tanggal, jam_masuk, jam_keluar, shift_kerja, status_kehadiran, bukti_kehadiran
         if (result) {
           setHistoryData(result.data);
         } else {
           setHistoryData([]);
         }
       } catch (e) {
-        console.log('Gagal mengambil history:', e);
+        console.log('Failed to fetch history:', e);
         setHistoryData([]);
       }
     };
     fetchHistory();
   }, [userId]);
 
+  // Process history data into attendance data
   useEffect(() => {
-    // 1. Filter hanya status_kehadiran "Hadir"
     const hadirData = Array.isArray(historyData)
       ? historyData.filter(item => item.status_kehadiran === "Hadir")
       : [];
   
-    // 2 & 3. Konversi setiap data menjadi 2 data (Masuk Kerja & Pulang Kerja)
     let converted = [];
-    hadirData.forEach((item, idx) => {
-      // Masuk Kerja
+    hadirData.forEach((item) => {
       if (item.jam_masuk) {
         converted.push({
           id: `${item.id}_masuk`,
+          ...item,
           type: "Masuk Kerja",
           time: item.jam_masuk,
-          date: item.tanggal,
         });
       }
-      // Pulang Kerja
       if (item.jam_keluar) {
         converted.push({
           id: `${item.id}_pulang`,
+          ...item,
           type: "Pulang Kerja",
           time: item.jam_keluar,
-          date: item.tanggal,
         });
       }
     });
   
-    // 4. Urutkan: data pertama dari API jadi id terakhir setelah dikonversi, dan sebaliknya
-    converted = converted.reverse();
-  
-    setAttendanceData(converted);
+    setAttendanceData(converted.reverse());
   }, [historyData]);
 
-  // Fungsi untuk filter data berdasarkan filter aktif (gunakan historyData)
+  // Apply filters to data
   const applyFilter = () => {
     const filtered = historyData.filter((item) => {
       const itemDate = new Date(item.tanggal);
@@ -186,12 +150,12 @@ export default function HistoryScreen() {
     setModalVisible(false);
   };
 
-  // Saat pertama kali load dan setiap historyData berubah
+  // Apply filter when historyData changes
   useEffect(() => {
     applyFilter();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyData]);
 
+  // Get month/year label for filter display
   const getMonthYearLabel = () => {
     const isAllMonth = selectedMonth === "All";
     const isAllYear = selectedYear === "All";
@@ -201,27 +165,196 @@ export default function HistoryScreen() {
     return `${months[parseInt(selectedMonth)]} ${selectedYear}`;
   };
 
-  // Render item untuk data dari API
+  // Render each history item
   const renderItem = ({ item }) => {
-    const isMasuk = item.status_kehadiran === "Masuk Kerja";
+    const statusColors = {
+      "Hadir": "#4CAF50",
+      "Izin": "#FFA000",
+      "Tidak Masuk": "#F44336"
+    };
+
+    const statusIcons = {
+      "Hadir": "checkmark",
+      "Izin": "document-text",
+      "Tidak Masuk": "close"
+    };
+
     return (
-      <View style={styles.itemContainer}>
+      <TouchableOpacity 
+        style={styles.itemContainer}
+        onPress={() => {
+          setSelectedDetailItem(item);
+          setDetailModalVisible(true);
+        }}
+      >
         <View
           style={[
             styles.circleIcon,
-            { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
+            { backgroundColor: statusColors[item.status_kehadiran] || "#4CAF50" },
           ]}
         >
-          <Ionicons name="time" size={18} color="#fff" />
+          <Ionicons 
+            name={statusIcons[item.status_kehadiran] || "time"} 
+            size={18} 
+            color="#fff" 
+          />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.typeText}>{item.status_kehadiran}</Text>
+          <Text style={styles.typeText}>
+            {item.status_kehadiran === "Hadir" ? 
+              `${formatTime(item.jam_masuk)} - ${formatTime(item.jam_keluar)}` : 
+              item.status_kehadiran}
+          </Text>
           <Text style={styles.dateText}>{item.tanggal}</Text>
-          <Text style={[styles.timeText, { color: isMasuk ? "#4CAF50" : "#F44336" }]}>
-          {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}        </Text>
-        <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
+          <Text style={styles.dateText}>Shift: {item.shift_kerja || '-'}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Render the detail modal
+  const renderDetailModal = () => {
+    if (!selectedDetailItem) return null;
+
+    const handleOpenImage = (imageUrl) => {
+      if (imageUrl && !imageUrl.includes("null")) {
+        Linking.openURL(imageUrl).catch(err => console.error("Failed to open image:", err));
+      }
+    };
+
+    const statusColors = {
+      "Hadir": "#4CAF50",
+      "Izin": "#FFA000",
+      "Tidak Masuk": "#F44336"
+    };
+
+    return (
+      <Modal
+        visible={detailModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <View style={detailStyles.modalOverlay}>
+          <View style={detailStyles.modalContainer}>
+            {/* Header */}
+            <View style={detailStyles.modalHeader}>
+              <Text style={detailStyles.modalTitle}>Detail Kehadiran</Text>
+              <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Content */}
+            <ScrollView style={detailStyles.modalContent}>
+              <View style={detailStyles.cardHeader}>
+                <Ionicons name="calendar-outline" size={24} color="#2E7BE8" />
+                <Text style={detailStyles.cardHeaderText}>{selectedDetailItem.tanggal}</Text>
+                <View style={[
+                  detailStyles.statusBadge,
+                  { 
+                    backgroundColor: statusColors[selectedDetailItem.status_kehadiran] + "20" || "#E8F5E9"
+                  }
+                ]}>
+                  <Text style={[
+                    detailStyles.statusText,
+                    { 
+                      color: statusColors[selectedDetailItem.status_kehadiran] || "#4CAF50"
+                    }
+                  ]}>
+                    {selectedDetailItem.status_kehadiran}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={detailStyles.detailRow}>
+                <Text style={detailStyles.detailLabel}>Shift Kerja:</Text>
+                <Text style={detailStyles.detailValue}>{selectedDetailItem.shift_kerja || "-"}</Text>
+              </View>
+
+              {selectedDetailItem.status_kehadiran === "Hadir" && (
+                <>
+                  <View style={detailStyles.timeSection}>
+                    <View style={detailStyles.timeCard}>
+                      <Ionicons name="time-outline" size={20} color="#4CAF50" />
+                      <Text style={detailStyles.timeLabel}>Jam Masuk</Text>
+                      <Text style={detailStyles.timeValue}>{formatTime(selectedDetailItem.jam_masuk)}</Text>
+                    </View>
+
+                    <View style={detailStyles.timeCard}>
+                      <Ionicons name="time-outline" size={20} color="#F44336" />
+                      <Text style={detailStyles.timeLabel}>Jam Pulang</Text>
+                      <Text style={detailStyles.timeValue}>{formatTime(selectedDetailItem.jam_keluar)}</Text>
+                    </View>
+                  </View>
+
+                  <View style={detailStyles.photoSection}>
+                    <Text style={detailStyles.sectionTitle}>Bukti Kehadiran</Text>
+                    
+                    {selectedDetailItem.bukti_kehadiran && !selectedDetailItem.bukti_kehadiran.includes("null") && (
+                      <TouchableOpacity onPress={() => handleOpenImage(selectedDetailItem.bukti_kehadiran)}>
+                        <View style={detailStyles.photoContainer}>
+                          <Image 
+                            source={{ uri: selectedDetailItem.bukti_kehadiran }} 
+                            style={detailStyles.photo} 
+                            resizeMode="cover"
+                          />
+                          <Text style={detailStyles.photoCaption}>Foto Masuk</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedDetailItem.bukti_kehadiran2 && !selectedDetailItem.bukti_kehadiran2.includes("null") && (
+                      <TouchableOpacity onPress={() => handleOpenImage(selectedDetailItem.bukti_kehadiran2)}>
+                        <View style={detailStyles.photoContainer}>
+                          <Image 
+                            source={{ uri: selectedDetailItem.bukti_kehadiran2 }} 
+                            style={detailStyles.photo} 
+                            resizeMode="cover"
+                          />
+                          <Text style={detailStyles.photoCaption}>Foto Pulang</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
+
+              {selectedDetailItem.status_kehadiran === "Izin" && (
+                <>
+                  <View style={detailStyles.infoCard}>
+                    <Ionicons name="document-text-outline" size={24} color="#FFA000" />
+                    <Text style={detailStyles.infoText}>{selectedDetailItem.keterangan || "Tidak ada keterangan"}</Text>
+                  </View>
+
+                  {selectedDetailItem.bukti_kehadiran && !selectedDetailItem.bukti_kehadiran.includes("null") && (
+                    <View style={detailStyles.photoSection}>
+                      <Text style={detailStyles.sectionTitle}>Bukti Izin</Text>
+                      <TouchableOpacity onPress={() => handleOpenImage(selectedDetailItem.bukti_kehadiran)}>
+                        <View style={detailStyles.photoContainer}>
+                          <Image 
+                            source={{ uri: selectedDetailItem.bukti_kehadiran }} 
+                            style={detailStyles.photo} 
+                            resizeMode="cover"
+                          />
+                          <Text style={detailStyles.photoCaption}>Surat Izin</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              )}
+
+              {selectedDetailItem.status_kehadiran === "Tidak Masuk" && (
+                <View style={detailStyles.infoCard}>
+                  <Ionicons name="warning-outline" size={24} color="#F44336" />
+                  <Text style={detailStyles.infoText}>Tidak hadir tanpa keterangan</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     );
   };
 
@@ -246,7 +379,7 @@ export default function HistoryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal Filter */}
+      {/* Filter Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -291,18 +424,9 @@ export default function HistoryScreen() {
               onValueChange={(itemValue) => setTempType(itemValue)}
             >
               <Picker.Item label={t("general.semua")} value="All" />
-              <Picker.Item
-                label={t("general.masuk")}
-                value="Masuk Kerja"
-              />
-              <Picker.Item
-                label={t("general.pulang")}
-                value="Pulang Kerja"
-              />
-              <Picker.Item
-                label={t("history.tidakMasuk")}
-                value="Tidak Masuk"
-              />
+              <Picker.Item label={t("general.masuk")} value="Hadir" />
+              <Picker.Item label={t("history.izin")} value="Izin" />
+              <Picker.Item label={t("history.tidakMasuk")} value="Tidak Masuk" />
             </Picker>
 
             <TouchableOpacity style={styles.modalButton} onPress={applyFilter}>
@@ -314,7 +438,7 @@ export default function HistoryScreen() {
         </View>
       </Modal>
 
-      {/* List */}
+      {/* History List */}
       <View style={styles.contentContainer}>
         <View style={styles.greyLine} />
         <Text style={styles.title}>{t("history.title")}</Text>
@@ -329,10 +453,143 @@ export default function HistoryScreen() {
           }
         />
       </View>
+
+      {/* Detail Modal */}
+      {renderDetailModal()}
     </View>
   );
 }
 
+// Detail Modal Styles
+const detailStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  cardHeaderText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  detailLabel: {
+    fontSize: 15,
+    color: '#666',
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+  },
+  statusBadge: {
+    marginLeft: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  timeSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  timeCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    marginHorizontal: 5,
+  },
+  timeLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  timeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  photoSection: {
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  photoContainer: {
+    marginBottom: 16,
+  },
+  photo: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  photoCaption: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  infoText: {
+    marginLeft: 10,
+    fontSize: 15,
+    color: '#555',
+    flex: 1,
+  },
+});
+
+// Main Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2E7BE8" },
   header: {

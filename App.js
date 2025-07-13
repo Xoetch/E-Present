@@ -16,12 +16,14 @@ import HistoryScreen from "./components/HistoryScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import CameraScreen from "./components/CameraScreen";
 import FormizinScreen from "./components/FormizinScreen";
+import resultModal from "./components/ResultModal";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <Tab.Navigator
@@ -29,14 +31,14 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: "#2E7BE8",
         tabBarInactiveTintColor: "gray",
-         tabBarPressColor: "transparent",
+        tabBarPressColor: "transparent",
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Riwayat") {
+          } else if (route.name === "History") {
             iconName = focused ? "time" : "time-outline";
-          } else if (route.name === "Profil") {
+          } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           }
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -49,9 +51,21 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Riwayat" component={HistoryScreen} />
-      <Tab.Screen name="Profil" component={ProfileScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: t("menu.home") }}
+      />
+      <Tab.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{ tabBarLabel: t("menu.history") }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: t("menu.profile") }}
+      />
     </Tab.Navigator>
   );
 }
@@ -93,6 +107,7 @@ export default function App() {
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="CameraScreen" component={CameraScreen} />
           <Stack.Screen name="FormIzinScreen" component={FormizinScreen} />
+          <Stack.Screen name="ResultModal" component={resultModal} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

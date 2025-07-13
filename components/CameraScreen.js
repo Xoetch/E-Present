@@ -46,6 +46,10 @@ export default function CameraScreen() {
     setFlash((current) => (current === "off" ? "on" : "off"));
   }
 
+  function togglecamera(){
+    navigation.navigate("ResultModal");
+  }
+
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       {/* Header peringatan */}
@@ -77,7 +81,7 @@ export default function CameraScreen() {
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.captureButton}>
+        <TouchableOpacity style={styles.captureButton} onPress={togglecamera} >
           <Ionicons name="camera-outline" size={28} color="#fff" />
         </TouchableOpacity>
 

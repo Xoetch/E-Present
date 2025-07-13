@@ -89,5 +89,10 @@
     "october": "October",
     "november": "November",
     "december": "December"
+  },
+  "menu":{
+    "home": "Home",
+    "history": "History",
+    "profile": "Profile"
   }
 }
