@@ -25,29 +25,7 @@ const screenHeight = Dimensions.get("window").height;
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
-  const chartData = [
-    {
-      name: t("general.masuk"),
-      population: 45,
-      color: "#2E7BE8",
-      legendFontColor: "#444",
-      legendFontSize: 12,
-    },
-    {
-      name: t("general.izin"),
-      population: 18,
-      color: "#FEC107",
-      legendFontColor: "#444",
-      legendFontSize: 12,
-    },
-    {
-      name: t("general.alfa"),
-      population: 36,
-      color: "#F44336",
-      legendFontColor: "#444",
-      legendFontSize: 12,
-    },
-  ];
+  const [chartData, setChartData] = useState([]);
 
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
@@ -110,6 +88,20 @@ export default function HomeScreen({ navigation }) {
           return dateTimeB - dateTimeA;
         });
         setRecentAttendance(converted.slice(0, 3)); // tampilkan 3 terakhir
+        
+        fetch(`${API.PIE_CHART}/${userId}`) // ganti dengan endpoint Anda
+        .then(res => res.json())
+        .then(json => {
+          const colors = ['#4CAF50', '#FFC107', '#F44336', '#2196F3']; // bisa ditambah
+          const pieData = json.labels.map((label, index) => ({
+            name: label,
+            population: json.data[index],
+            color: colors[index % colors.length],
+            legendFontColor: '#333',
+            legendFontSize: 14,
+          }));
+          setChartData(pieData);
+        });
       } catch (err) {
         console.log("Error fetching attendance history:", err);
       }
@@ -255,7 +247,7 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t("home.staistik")}</Text>
+            <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
             <PieChart
               data={chartData}
               width={screenWidth - 32}

@@ -6,6 +6,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import API from "../utils/ApiConfig";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -38,7 +39,6 @@ export default function ProfileScreen() {
           if (data.foto_pengguna) {
             setImage(data.foto_pengguna);
           }
-          console.log(data.foto_pengguna);
         }
       } catch (e) {
         console.log("Gagal mengambil userData:", e);
@@ -131,14 +131,14 @@ export default function ProfileScreen() {
     formData.append("id", id_pengguna);
 
     try {
-      const res = await axios.post("http://10.1.51.153:8080/user/updateProfilePic", formData, {
+      const res = await axios.post(API.PROFILE, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (res.data && res.data.data) {
         const updatedData = res.data.data;
         const newUserData = {
           ...userData,
-          foto_pengguna: `http://10.1.51.153:8080/user/foto/${updatedData.foto_pengguna}`,
+          foto_pengguna: updatedData.foto_pengguna,
         };
         await AsyncStorage.setItem("userData", JSON.stringify(newUserData));
         setUserData(newUserData);
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
         <View style={styles.infoRow}>
           <Ionicons name="business" size={20} color="#888" style={styles.icon} />
           <View>
-            <Text style={styles.label}>{t("profile.workplace")}</Text>
+            <Text style={styles.label}>{t("profile.address")}</Text>
             <Text style={styles.value}>{userData.alamat_lengkap || "Astra International"}</Text>
           </View>
         </View>

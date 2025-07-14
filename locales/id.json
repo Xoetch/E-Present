@@ -14,7 +14,7 @@
     "no": "Tidak"
   },
   "home": {
-    "staistik": "Statistik Kehadiran",
+    "statistik": "Kehadiran sebulan terakhir",
     "history": "Riwayat Kehadiran",
     "lihat": "Lihat Selengkapnya",
     "calendar": "Kalender"
@@ -32,7 +32,7 @@
   },
   "profile": {
     "name": "Profil Pekerja",
-    "workplace": "Tempat Bekerja",
+    "address": "Alamat",
     "shift": "Shift Kerja",
     "Localization": "Pengaturan Bahasa",
     "eng": "Bahasa Inggris",

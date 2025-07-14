@@ -14,7 +14,7 @@
     "no": "No"
   },
   "home": {
-    "staistik": "Attendance Statistics",
+    "statistik": "Attendance for the Last Month",
     "history": "Attendance History",
     "lihat": "View More",
     "calendar": "Calendar"
@@ -32,7 +32,7 @@
   },
   "profile": {
     "name": "Employee Profile",
-    "workplace": "Workplace",
+    "address": "Address",
     "shift": "Work Shift",
     "Localization": "Language Settings",
     "eng": "English",

@@ -52,13 +52,6 @@ export default function HistoryScreen() {
   // 1. State untuk id_pengguna
   const [userId, setUserId] = useState(null);
 
-  // 2. Dummy data absensi jadi useState
-  const [attendanceData, setAttendanceData] = useState([
-    { id: "1", type: "Masuk Kerja", time: "09:00 AM", date: "2024-01-14" },
-    { id: "2", type: "Pulang Kerja", time: "05:00 PM", date: "2024-02-14" },
-    { id: "3", type: "Masuk Kerja", time: "08:30 AM", date: "2024-03-10" },
-  ]);
-
   // 5. State untuk hasil API
   const [historyData, setHistoryData] = useState([]);
 
@@ -147,40 +140,6 @@ export default function HistoryScreen() {
     fetchHistory();
   }, [userId]);
 
-  useEffect(() => {
-    // 1. Filter hanya status_kehadiran "Hadir"
-    const hadirData = Array.isArray(historyData)
-      ? historyData.filter((item) => item.status_kehadiran === "Hadir")
-      : [];
-
-    // 2 & 3. Konversi setiap data menjadi 2 data (Masuk Kerja & Pulang Kerja)
-    let converted = [];
-    hadirData.forEach((item, idx) => {
-      // Masuk Kerja
-      if (item.jam_masuk) {
-        converted.push({
-          id: `${item.id}_masuk`,
-          type: "Masuk Kerja",
-          time: item.jam_masuk,
-          date: item.tanggal,
-        });
-      }
-      // Pulang Kerja
-      if (item.jam_keluar) {
-        converted.push({
-          id: `${item.id}_pulang`,
-          type: "Pulang Kerja",
-          time: item.jam_keluar,
-          date: item.tanggal,
-        });
-      }
-    });
-
-    // 4. Urutkan: data pertama dari API jadi id terakhir setelah dikonversi, dan sebaliknya
-    converted = converted.reverse();
-
-    setAttendanceData(converted);
-  }, [historyData]);
 
   // Fungsi untuk filter data berdasarkan filter aktif (gunakan historyData)
   const applyFilter = () => {
@@ -372,7 +331,7 @@ export default function HistoryScreen() {
 
               {/* Tampilkan Bukti Izin hanya jika status mengandung "Izin" */}
               {selectedItem?.status_kehadiran?.startsWith("Izin") &&
-                selectedItem?.buktiIzin && (
+                selectedItem?.bukti_izin && (
                   <TouchableOpacity
                     onPress={() => setSelectedPhotoType("izin")}
                   >
@@ -405,10 +364,10 @@ export default function HistoryScreen() {
                 </>
               )}
 
-            {selectedPhotoType === "izin" && selectedItem?.buktiIzin && (
+            {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
               <>
                 <Image
-                  source={{ uri: selectedItem?.buktiIzin }}
+                  source={{ uri: selectedItem?.bukti_izin }}
                   style={styles.photo}
                   resizeMode="contain"
                 />

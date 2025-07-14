@@ -70,6 +70,7 @@ export default function LoginScreen() {
       throw new Error('Response bukan JSON');
     }
     if (data && data.status === 200) {
+      console.log('Login berhasil:', data);
       return data.data;
     } else {
       throw new Error(data?.message || 'Username atau Password salah!');
