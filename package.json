@@ -23,7 +23,7 @@
     "expo-face-detector": "^13.0.2",
     "expo-image-picker": "~16.1.4",
     "expo-localization": "~16.1.5",
-    "expo-location": "~18.1.5",
+    "expo-location": "~18.1.6",
     "expo-splash-screen": "^0.30.9",
     "expo-status-bar": "~2.2.3",
     "geolib": "^3.3.4",
@@ -42,7 +42,8 @@
     "react-native-month-year-picker": "^1.9.0",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-svg": "15.11.2"
+    "react-native-svg": "15.11.2",
+    "lottie-react-native": "7.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

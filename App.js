@@ -17,6 +17,8 @@ import ProfileScreen from "./components/ProfileScreen";
 import CameraScreen from "./components/CameraScreen";
 import FormizinScreen from "./components/FormizinScreen";
 import resultModal from "./components/ResultModal";
+import LocationMapScreen from "./components/LocationMapScreen";
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,17 +56,17 @@ function MainTabs() {
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{ tabBarLabel: t("menu.home") }}
+        options={{ tabBarLabel: t("bar.home") }}
       />
       <Tab.Screen
         name="History"
         component={HistoryScreen}
-        options={{ tabBarLabel: t("menu.history") }}
+        options={{ tabBarLabel: t("bar.history") }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ tabBarLabel: t("menu.profile") }}
+        options={{ tabBarLabel: t("bar.profile") }}
       />
     </Tab.Navigator>
   );
@@ -108,6 +110,7 @@ export default function App() {
           <Stack.Screen name="CameraScreen" component={CameraScreen} />
           <Stack.Screen name="FormIzinScreen" component={FormizinScreen} />
           <Stack.Screen name="ResultModal" component={resultModal} />
+          <Stack.Screen name="LocationMap" component={LocationMapScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
