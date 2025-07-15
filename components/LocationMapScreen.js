@@ -55,8 +55,11 @@ export default function MapLocationScreen() {
         await submitAbsensi(photoUri, userData, currentLoc);
       } else {
         setStatusText(
-          `Jarak Anda ${Math.round(jarak)} m dari kantor (maks `,MAX_DISTANCE_METERS` m).`
+          `Jarak Anda ${Math.round(
+            jarak
+          )} m dari kantor (maks ${MAX_DISTANCE_METERS} m).`
         );
+
         setTimeout(() => {
           Alert.alert(
             "Gagal",
