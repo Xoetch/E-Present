@@ -84,11 +84,8 @@ export default function HistoryScreen() {
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "-";
-    // Jika sudah dalam format HH:mm, langsung return
     if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
-    // Jika format jam:menit:detik, ambil jam dan menit
     if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0, 5);
-    // Jika format 09:00 AM atau 05:00 PM
     const match = timeStr.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
     if (match) {
       let hour = parseInt(match[1], 10);
@@ -100,7 +97,7 @@ export default function HistoryScreen() {
       }
       return `${hour.toString().padStart(2, "0")}:${minute}`;
     }
-    return timeStr; // fallback
+    return timeStr; 
   };
 
   // 1. Ambil id_pengguna dari AsyncStorage
@@ -165,7 +162,6 @@ export default function HistoryScreen() {
   // Saat pertama kali load dan setiap historyData berubah
   useEffect(() => {
     applyFilter();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyData]);
 
   const getMonthYearLabel = () => {
@@ -178,36 +174,54 @@ export default function HistoryScreen() {
   };
 
   // Render item untuk data dari API
-  const renderItem = ({ item }) => {
-    const isMasuk = item.status_kehadiran === "Masuk Kerja";
-    return (
-      <TouchableOpacity onPress={() => handleItemPress(item)}>
-        <View style={styles.itemContainer}>
-          <View
-            style={[
-              styles.circleIcon,
-              { backgroundColor: isMasuk ? "#4CAF50" : "#F44336" },
-            ]}
-          >
-            <Ionicons name="time" size={18} color="#fff" />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.typeText}>{item.status_kehadiran}</Text>
-            <Text style={styles.dateText}>{item.tanggal}</Text>
-            <Text
-              style={[
-                styles.timeText,
-                { color: isMasuk ? "#4CAF50" : "#F44336" },
-              ]}
-            >
-              {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}{" "}
-            </Text>
-            <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+const renderItem = ({ item }) => {
+  const { status_kehadiran } = item;
+  console.log("Status Kehadiran:", status_kehadiran);
+
+  const isHadir = status_kehadiran === "Hadir";
+
+  const getBaseStatus = () => {
+    if (status_kehadiran.startsWith("Izin")) return "Izin";
+    if (status_kehadiran === "Hadir") return "Hadir";
+    if (status_kehadiran === "Sakit") return "Sakit";
+    if (status_kehadiran === "Alpa") return "Alpa";
+    if (status_kehadiran === "Cuti") return "Cuti";
+    return "Lainnya";
   };
+
+  const baseStatus = getBaseStatus();
+
+  const iconMap = {
+    Hadir: { icon: "checkmark-circle", color: "#4CAF50" },
+    Izin: { icon: "alert-circle", color: "#FFC107" },
+    Sakit: { icon: "medkit", color: "#03A9F4" },
+    Alpa: { icon: "close-circle", color: "#F44336" },
+    Cuti: { icon: "briefcase", color: "#9C27B0" },
+    Lainnya: { icon: "help-circle", color: "#9E9E9E" },
+  };
+
+  const { icon, color } = iconMap[baseStatus];
+
+  return (
+    <TouchableOpacity onPress={() => handleItemPress(item)}>
+      <View style={styles.itemContainer}>
+        <View style={[styles.circleIcon, { backgroundColor: color }]}>
+          <Ionicons name={icon} size={20} color="#fff" />
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.typeText}>{status_kehadiran}</Text>
+          <Text style={styles.dateText}>{item.tanggal}</Text>
+          <Text style={[styles.timeText, { color }]}>
+            {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}
+          </Text>
+          <Text style={styles.dateText}>Shift: {item.shift_kerja}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+
 
   return (
     <View style={styles.container}>

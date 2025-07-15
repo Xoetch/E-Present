@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import API from "../utils/ApiConfig";
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onLogout }) {
   const navigation = useNavigation();
   const [image, setImage] = useState("");
   const { t, i18n } = useTranslation();
@@ -23,6 +23,8 @@ export default function ProfileScreen() {
   });
 
   useEffect(() => {
+    console.log("onLogout exists?", typeof onLogout);
+
     const fetchUserData = async () => {
       try {
         const dataString = await AsyncStorage.getItem("userData");
@@ -81,7 +83,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
+ const handleLogout = async () => {
     Alert.alert(t("profile.Konfirmasi"), null, [
       {
         text: t("general.no"),
@@ -93,7 +95,7 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             await AsyncStorage.multiRemove(["userToken", "userData"]);
-            navigation.replace("Login");
+            onLogout(); // <-- kembalikan ke login screen
           } catch (error) {
             console.error("Logout error:", error);
             Alert.alert("Error", "Gagal logout");

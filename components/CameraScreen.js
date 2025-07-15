@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import WithLoader from "../utils/Loader";
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState("front");
@@ -14,6 +15,7 @@ export default function CameraScreen() {
   const [userData, setUserData] = useState(null);
   const [isAllowedTime, setIsAllowedTime] = useState(false);
   const [hasShownAlert, setHasShownAlert] = useState(false);
+  const [loadingTime, setLoadingTime] = useState(true);
 
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -24,61 +26,60 @@ export default function CameraScreen() {
     return h * 3600 + m * 60 + s;
   };
 
-const fetchUserData = async () => {
-  try {
-    const dataString = await AsyncStorage.getItem("userData");
-    if (dataString) {
-      const data = JSON.parse(dataString);
-      setUserData(data);
+  const fetchUserData = async () => {
+    try {
+      const dataString = await AsyncStorage.getItem("userData");
+      if (dataString) {
+        const data = JSON.parse(dataString);
+        setUserData(data);
 
-      const now = new Date();
-      const currentInSeconds =
-        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const now = new Date();
+        const currentInSeconds =
+          now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
-      const shift = data.jam_shift?.toLowerCase();
-      const [startStr, endStr] = data.jam_shift.split(" - ");
-      const [sh, sm] = startStr.split(":").map(Number);
-      const [eh, em] = endStr.split(":").map(Number);
+        const shift = data.jam_shift?.toLowerCase();
+        const [startStr, endStr] = data.jam_shift.split(" - ");
+        const [sh, sm] = startStr.split(":").map(Number);
+        const [eh, em] = endStr.split(":").map(Number);
 
-      const start = sh * 3600 + sm * 60;
-      const end = eh * 3600 + em * 60;
+        const start = sh * 3600 + sm * 60;
+        const end = eh * 3600 + em * 60;
 
-      console.log("Jam sekarang:", currentInSeconds);
-      console.log("Jam shift:", start, "-", end);
+        console.log("Jam sekarang:", currentInSeconds);
+        console.log("Jam shift:", start, "-", end);
 
-      let allowed = false;
-      if (start < end) {
-        allowed = currentInSeconds >= start && currentInSeconds <= end;
-      } else {
-        allowed =
-          currentInSeconds >= start || currentInSeconds <= end;
-      }
+        let allowed = false;
+        if (start < end) {
+          allowed = currentInSeconds >= start && currentInSeconds <= end;
+        } else {
+          allowed = currentInSeconds >= start || currentInSeconds <= end;
+        }
 
-      console.log("Diperbolehkan?", allowed);
+        console.log("Diperbolehkan?", allowed);
 
-      if (!allowed) {
-        Alert.alert(
-          "Akses Ditolak",
-          "Kamera hanya dapat digunakan sesuai jam shift Anda.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                navigation.navigate("MainTabs");
+        if (!allowed) {
+          Alert.alert(
+            "Akses Ditolak",
+            "Kamera hanya dapat digunakan sesuai jam shift Anda.",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  navigation.navigate("MainTabs");
+                },
               },
-            },
-          ]
-        );
-      }
+            ]
+          );
+        }
 
-      setIsAllowedTime(allowed); 
+        setIsAllowedTime(allowed);
+      }
+    } catch (e) {
+      console.log("Gagal mengambil Shift:", e);
+      Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
+      navigation.navigate("MainTabs");
     }
-  } catch (e) {
-    console.log("Gagal mengambil Shift:", e);
-    Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
-    navigation.navigate("MainTabs");
-  }
-};
+  };
 
   // Timer realtime jam
   useEffect(() => {
@@ -88,6 +89,8 @@ const fetchUserData = async () => {
       const minutes = now.getMinutes().toString().padStart(2, "0");
       const seconds = now.getSeconds().toString().padStart(2, "0");
       setCurrentTime(`${hours}:${minutes}:${seconds}`);
+            setLoadingTime(false);
+
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -105,13 +108,17 @@ const fetchUserData = async () => {
     }, [])
   );
 
-  
   if (!permission) return <View style={styles.container} />;
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.message}>We need your permission to show the camera</Text>
-        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+        <Text style={styles.message}>
+          We need your permission to show the camera
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={styles.permissionButton}
+        >
           <Text style={{ color: "#fff" }}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -164,7 +171,9 @@ const fetchUserData = async () => {
           flash={flash}
         >
           <View style={styles.cameraOverlay}>
-            <Text style={styles.cameraTime}>{currentTime}</Text>
+            <WithLoader loading={loadingTime}>
+              <Text style={styles.cameraTime}>{currentTime}</Text>
+            </WithLoader>
           </View>
         </CameraView>
       </View>
@@ -194,7 +203,11 @@ const fetchUserData = async () => {
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#2E7BE8" },
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  permissionButton: { backgroundColor: "#2E7BE8", padding: 12, borderRadius: 8 },
+  permissionButton: {
+    backgroundColor: "#2E7BE8",
+    padding: 12,
+    borderRadius: 8,
+  },
   headerContainer: { padding: 16 },
   warningBox: {
     backgroundColor: "#fff",
