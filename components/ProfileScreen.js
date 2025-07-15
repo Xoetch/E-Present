@@ -10,7 +10,7 @@ import API from "../utils/ApiConfig";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const [image, setImage] = useState("https://upload.wikimedia.org/wikipedia/commons/7/73/Lion_waiting_in_Namibia.jpg");
+  const [image, setImage] = useState("");
   const { t, i18n } = useTranslation();
   const [currentLang, setCurrentLang] = useState(i18n.language);
 

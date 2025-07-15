@@ -1,5 +1,7 @@
-const BASE_URL = "http://10.1.51.153:8080" // Punya Ammar, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
-// const BASE_URL = "http://192.168.3.69:8080" // Punya Verdy, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
+// const BASE_URL = "http://192.168.227.145:8080" // Punya Ammar, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
+// const BASE_URL = "http://192.168.3.69:8080" // Punya Ammar, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
+// const BASE_URL = "http://192.168.100.148:8080" // Punya Ammar, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
+const BASE_URL = "http://192.168.181.85:8080" // Punya Ammar, jangan dihapus. komen dan duplikat untuk menyesuaikan dengan IP masing-masing
 
 const API = {
   BASE_URL,
