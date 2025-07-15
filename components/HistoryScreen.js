@@ -13,7 +13,8 @@ import {
   Image,
 } from "react-native";
 import API from "../utils/ApiConfig";
-
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 const months = [
   "Januari",
@@ -118,28 +119,28 @@ export default function HistoryScreen() {
     fetchUserId();
   }, []);
 
-  // 3 & 4. Fetch data history dari API jika userId sudah ada
-  useEffect(() => {
-    console.log("Fetching history for userId:", userId);
-    const fetchHistory = async () => {
-      if (!userId) return;
-      try {
-        const response = await fetch(`${API.HISTORY}/${userId}`);
-        const result = await response.json();
-        // 6. Struktur data: tanggal, jam_masuk, jam_keluar, shift_kerja, status_kehadiran, bukti_kehadiran
-        if (result) {
-          setHistoryData(result.data);
-        } else {
+  // Ganti useEffect fetch history dengan useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      const fetchHistory = async () => {
+        if (!userId) return;
+        try {
+          const response = await fetch(`${API.HISTORY}/${userId}`);
+          const result = await response.json();
+          // 6. Struktur data: tanggal, jam_masuk, jam_keluar, shift_kerja, status_kehadiran, bukti_kehadiran
+          if (result) {
+            setHistoryData(result.data);
+          } else {
+            setHistoryData([]);
+          }
+        } catch (e) {
+          console.log("Gagal mengambil history:", e);
           setHistoryData([]);
         }
-      } catch (e) {
-        console.log("Gagal mengambil history:", e);
-        setHistoryData([]);
-      }
-    };
-    fetchHistory();
-  }, [userId]);
-
+      };
+      fetchHistory();
+    }, [userId])
+  );
 
   // Fungsi untuk filter data berdasarkan filter aktif (gunakan historyData)
   const applyFilter = () => {

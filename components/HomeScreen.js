@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import CalendarWithHoliday from "./Calendar";
+import CalendarWithHoliday, { isHariLibur } from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
 import WithLoader from "../utils/Loader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,7 +26,12 @@ export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
   const [chartData, setChartData] = useState([]);
+  const [events, setEvents] = useState([]);
+  const today = new Date().toISOString().split("T")[0];
+  const libur = isHariLibur(today, events);
 
+  const [disabledDates, setDisabledDates] = useState([]);
+  const isTodayDisabled = disabledDates.includes(today);
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
   const [userData, setUserData] = useState({
@@ -101,7 +106,18 @@ export default function HomeScreen({ navigation }) {
             legendFontSize: 14,
           }));
           setChartData(pieData);
+
+
         });
+
+        const responseExistingIzin = await fetch(`${API.EXISTING_IZIN}/${userId}`);
+        const resultExistingIzin = await responseExistingIzin.json();
+        console.log("Existing Izin:", resultExistingIzin.data);
+
+        if (resultExistingIzin?.data) {
+          const existingDates = resultExistingIzin.data.map(item => item.tanggal);
+          setDisabledDates(existingDates);
+        }
       } catch (err) {
         console.log("Error fetching attendance history:", err);
       }
@@ -109,6 +125,10 @@ export default function HomeScreen({ navigation }) {
 
     fetchAttendanceHistory();
   }, []);
+
+  useEffect(() => {
+    console.log("Events di FormizinPopup:", events);
+  }, [events]);
 
   // Animation + userData update when screen focused
   useFocusEffect(
@@ -226,8 +246,12 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.actionCard}>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[
+                styles.actionButton,
+                (libur || isTodayDisabled) && { opacity: 0.5 }
+              ]}
               onPress={() => handleNavigation("CameraScreen")}
+              disabled={libur || isTodayDisabled}
             >
               <Ionicons name="scan" size={24} color="#2E7BE8" />
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
@@ -336,7 +360,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
             <View style={styles.calendarContainer}>
-              <CalendarWithHoliday />
+              <CalendarWithHoliday onEventsChange={setEvents} />
             </View>
           </View>
         </Animated.View>
@@ -345,6 +369,8 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
+        events={events}
+        disabledDates={disabledDates}
       />
     </View>
   );

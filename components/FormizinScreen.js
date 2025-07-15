@@ -18,9 +18,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import API from "../utils/ApiConfig";
 
-export default function FormizinPopup({ visible, onClose }) {
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+export default function FormizinPopup({ visible, onClose, events, disabledDates }) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const [startDate, setStartDate] = useState(tomorrow);
+  const [endDate, setEndDate] = useState(tomorrow);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [jenis, setJenis] = useState(null);
@@ -31,6 +33,7 @@ export default function FormizinPopup({ visible, onClose }) {
   const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
 
+
   useEffect(() => {
     setItems([
       { label: t("form.jenis.sakit"), value: "sakit" },
@@ -39,9 +42,11 @@ export default function FormizinPopup({ visible, onClose }) {
     ]);
   }, [t, i18n.language]);
 
+  
+
   const resetForm = () => {
-    setStartDate(new Date());
-    setEndDate(new Date());
+    setStartDate(tomorrow);
+    setEndDate(tomorrow);
     setShowStartPicker(false);
     setShowEndPicker(false);
     setJenis(null);
@@ -53,6 +58,15 @@ export default function FormizinPopup({ visible, onClose }) {
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const isHariLibur = (date) => {
+    const ymd = date.toISOString().slice(0, 10);
+    const isEventHoliday = Array.isArray(events) && events.some(event => event.start?.date === ymd);
+    const day = date.getDay();
+    const isWeekend = day === 0 || day === 6;
+    const isDisabled = disabledDates.includes(ymd);
+    return isEventHoliday || isWeekend || isDisabled;
   };
 
   const pickImage = async () => {
@@ -70,12 +84,26 @@ export default function FormizinPopup({ visible, onClose }) {
 
   const handleStartChange = (event, selectedDate) => {
     setShowStartPicker(false);
-    if (selectedDate) setStartDate(selectedDate);
+    if (selectedDate) {
+      if (isHariLibur(selectedDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+        return;
+      }
+      setStartDate(selectedDate);
+      // Jika endDate < startDate, update endDate juga
+      if (endDate < selectedDate) setEndDate(selectedDate);
+    }
   };
 
   const handleEndChange = (event, selectedDate) => {
     setShowEndPicker(false);
-    if (selectedDate) setEndDate(selectedDate);
+    if (selectedDate) {
+      if (isHariLibur(selectedDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+        return;
+      }
+      setEndDate(selectedDate);
+    }
   };
 
   const formatDate = (date) =>
@@ -89,6 +117,11 @@ export default function FormizinPopup({ visible, onClose }) {
     const submitIzin = async () => {
       if (!startDate || !endDate || !jenis || !image) {
       Alert.alert('Error', 'Semua field wajib diisi dan foto harus diambil');
+        return;
+      }
+      console.log(startDate)
+      if (isHariLibur(startDate) || isHariLibur(endDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
         return;
       }
   
@@ -162,6 +195,7 @@ export default function FormizinPopup({ visible, onClose }) {
             mode="date"
             display="default"
             onChange={handleStartChange}
+            minimumDate={tomorrow}
             maximumDate={endDate}
           />
         )}
@@ -180,6 +214,7 @@ export default function FormizinPopup({ visible, onClose }) {
             display="default"
             onChange={handleEndChange}
             minimumDate={startDate}
+            
           />
         )}
 
