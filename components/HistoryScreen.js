@@ -16,21 +16,6 @@ import API from "../utils/ApiConfig";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 
-const months = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
-];
-
 export default function HistoryScreen() {
   const currentDate = new Date();
   const { t, i18n } = useTranslation();
