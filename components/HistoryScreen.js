@@ -4,10 +4,21 @@ import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Dimensions, ScrollView } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import API from "../utils/ApiConfig";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // Constants - moved outside component to prevent recreation
 const FILTER_ALL = "All";
@@ -16,41 +27,41 @@ const YEAR_RANGE_LENGTH = 10;
 
 // Enhanced status configurations with gradients
 const STATUS_CONFIG = {
-  Hadir: { 
-    icon: "checkmark-circle", 
+  Hadir: {
+    icon: "checkmark-circle",
     colors: ["#4CAF50", "#66BB6A"],
     lightColor: "#E8F5E8",
-    textColor: "#2E7D32"
+    textColor: "#2E7D32",
   },
-  Izin: { 
-    icon: "alert-circle", 
+  Izin: {
+    icon: "alert-circle",
     colors: ["#FFC107", "#FFD54F"],
     lightColor: "#FFF8E1",
-    textColor: "#F57F17"
+    textColor: "#F57F17",
   },
-  Sakit: { 
-    icon: "medkit", 
+  Sakit: {
+    icon: "medkit",
     colors: ["#03A9F4", "#42A5F5"],
     lightColor: "#E3F2FD",
-    textColor: "#1565C0"
+    textColor: "#1565C0",
   },
-  Alfa: { 
-    icon: "close-circle", 
+  Alfa: {
+    icon: "close-circle",
     colors: ["#F44336", "#EF5350"],
     lightColor: "#FFEBEE",
-    textColor: "#C62828"
+    textColor: "#C62828",
   },
-  Cuti: { 
-    icon: "briefcase", 
+  Cuti: {
+    icon: "briefcase",
     colors: ["#9C27B0", "#BA68C8"],
     lightColor: "#F3E5F5",
-    textColor: "#7B1FA2"
+    textColor: "#7B1FA2",
   },
-  Lainnya: { 
-    icon: "help-circle", 
+  Lainnya: {
+    icon: "help-circle",
     colors: ["#9E9E9E", "#BDBDBD"],
     lightColor: "#F5F5F5",
-    textColor: "#616161"
+    textColor: "#616161",
   },
 };
 
@@ -295,43 +306,37 @@ export default function HistoryScreen() {
               <Ionicons name={icon} size={24} color="#fff" />
             </View>
           </View>
-          
+
           <View style={styles.contentSection}>
             <View style={styles.headerRow}>
               <Text style={[styles.statusText, { color: textColor }]}>{item.status_kehadiran}</Text>
               <View style={[styles.statusBadge, { backgroundColor: lightColor }]}>
-                <Text style={[styles.badgeText, { color: textColor }]}>
-                  {baseStatus}
-                </Text>
+                <Text style={[styles.badgeText, { color: textColor }]}>{baseStatus}</Text>
               </View>
             </View>
-            
+
             <View style={styles.dateRow}>
               <Ionicons name="calendar-outline" size={14} color="#8E8E93" />
               <Text style={styles.dateText}>{item.tanggal}</Text>
             </View>
-            
+
             <View style={styles.timeRow}>
               <View style={styles.timeItem}>
                 <Ionicons name="log-in-outline" size={14} color="#34C759" />
                 <Text style={styles.timeLabel}>Masuk</Text>
-                <Text style={[styles.timeValue, { color: "#34C759" }]}>
-                  {formatTime(item.jam_masuk)}
-                </Text>
+                <Text style={[styles.timeValue, { color: "#34C759" }]}>{formatTime(item.jam_masuk)}</Text>
               </View>
-              
+
               <View style={styles.timeSeparator} />
-              
+
               <View style={styles.timeItem}>
                 <Ionicons name="log-out-outline" size={14} color="#FF3B30" />
                 <Text style={styles.timeLabel}>Keluar</Text>
-                <Text style={[styles.timeValue, { color: "#FF3B30" }]}>
-                  {formatTime(item.jam_keluar)}
-                </Text>
+                <Text style={[styles.timeValue, { color: "#FF3B30" }]}>{formatTime(item.jam_keluar)}</Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.chevronContainer}>
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </View>
@@ -347,7 +352,7 @@ export default function HistoryScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.loadingCard}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading user data...</Text>
+          <Text style={styles.loadingText}>{t("result.desc2")}</Text>
         </View>
       </View>
     );
@@ -361,10 +366,10 @@ export default function HistoryScreen() {
           <View style={styles.errorIconContainer}>
             <Ionicons name="alert-circle" size={48} color="#FF3B30" />
           </View>
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorTitle}>{t("result.desc3")}</Text>
           <Text style={styles.errorText}>{userError || historyError}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>{t("general.repeat")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -377,10 +382,10 @@ export default function HistoryScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
-            <Text style={styles.headerTitle}>Attendance History</Text>
-            <Text style={styles.headerSubtitle}>Track your attendance records</Text>
+            <Text style={styles.headerTitle}>{t("history.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("history.subtitle")}</Text>
           </View>
-          
+
           <View style={styles.filterSection}>
             <TouchableOpacity style={styles.filterCard} onPress={openFilterModal}>
               <Ionicons name="calendar-outline" size={18} color="#007AFF" />
@@ -401,7 +406,7 @@ export default function HistoryScreen() {
                 <Ionicons name="close" size={24} color="#8E8E93" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               <View style={styles.filterGroup}>
                 <Text style={styles.filterLabel}>{t("history.bulan")}</Text>
@@ -440,7 +445,7 @@ export default function HistoryScreen() {
                 </View>
               </View>
             </ScrollView>
-            
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -458,7 +463,7 @@ export default function HistoryScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.photoModalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Attendance Details</Text>
+              <Text style={styles.modalTitle}>{t("history.detail")}</Text>
               <TouchableOpacity onPress={() => setPhotoModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#8E8E93" />
               </TouchableOpacity>
@@ -477,24 +482,38 @@ export default function HistoryScreen() {
                 {!selectedItem?.status_kehadiran?.startsWith("Izin") && (
                   <>
                     {selectedItem?.bukti_kehadiran && (
-                      <TouchableOpacity 
-                        onPress={() => setSelectedPhotoType("masuk")} 
-                        style={[styles.photoButton, selectedPhotoType === "masuk" && styles.activePhotoButton]}
-                      >
-                        <Ionicons name="log-in-outline" size={20} color={selectedPhotoType === "masuk" ? "#fff" : "#007AFF"} />
-                        <Text style={[styles.photoButtonText, selectedPhotoType === "masuk" && styles.activePhotoButtonText]}>
-                          Check In Photo
+                      <TouchableOpacity
+                        onPress={() => setSelectedPhotoType("masuk")}
+                        style={[styles.photoButton, selectedPhotoType === "masuk" && styles.activePhotoButton]}>
+                        <Ionicons
+                          name="log-in-outline"
+                          size={20}
+                          color={selectedPhotoType === "masuk" ? "#fff" : "#007AFF"}
+                        />
+                        <Text
+                          style={[
+                            styles.photoButtonText,
+                            selectedPhotoType === "masuk" && styles.activePhotoButtonText,
+                          ]}>
+                          {t("history.checkIn")}
                         </Text>
                       </TouchableOpacity>
                     )}
                     {selectedItem?.bukti_kehadiran2 && (
-                      <TouchableOpacity 
-                        onPress={() => setSelectedPhotoType("pulang")} 
-                        style={[styles.photoButton, selectedPhotoType === "pulang" && styles.activePhotoButton]}
-                      >
-                        <Ionicons name="log-out-outline" size={20} color={selectedPhotoType === "pulang" ? "#fff" : "#007AFF"} />
-                        <Text style={[styles.photoButtonText, selectedPhotoType === "pulang" && styles.activePhotoButtonText]}>
-                          Check Out Photo
+                      <TouchableOpacity
+                        onPress={() => setSelectedPhotoType("pulang")}
+                        style={[styles.photoButton, selectedPhotoType === "pulang" && styles.activePhotoButton]}>
+                        <Ionicons
+                          name="log-out-outline"
+                          size={20}
+                          color={selectedPhotoType === "pulang" ? "#fff" : "#007AFF"}
+                        />
+                        <Text
+                          style={[
+                            styles.photoButtonText,
+                            selectedPhotoType === "pulang" && styles.activePhotoButtonText,
+                          ]}>
+                          {t("history.checkOut")}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -505,10 +524,21 @@ export default function HistoryScreen() {
                 {selectedItem?.status_kehadiran?.startsWith("Izin") && selectedItem?.bukti_izin && (
                   <TouchableOpacity
                     onPress={() => setSelectedPhotoType("izin")}
-                    style={[styles.photoButton, styles.leavePhotoButton, selectedPhotoType === "izin" && styles.activeLeaveButton]}
-                  >
-                    <Ionicons name="document-text-outline" size={20} color={selectedPhotoType === "izin" ? "#fff" : "#FF9500"} />
-                    <Text style={[styles.leavePhotoButtonText, selectedPhotoType === "izin" && styles.activePhotoButtonText]}>
+                    style={[
+                      styles.photoButton,
+                      styles.leavePhotoButton,
+                      selectedPhotoType === "izin" && styles.activeLeaveButton,
+                    ]}>
+                    <Ionicons
+                      name="document-text-outline"
+                      size={20}
+                      color={selectedPhotoType === "izin" ? "#fff" : "#FF9500"}
+                    />
+                    <Text
+                      style={[
+                        styles.leavePhotoButtonText,
+                        selectedPhotoType === "izin" && styles.activePhotoButtonText,
+                      ]}>
                       Leave Document
                     </Text>
                   </TouchableOpacity>
@@ -540,13 +570,10 @@ export default function HistoryScreen() {
       <View style={styles.contentContainer}>
         <View style={styles.contentHeader}>
           <View style={styles.greyLine} />
-          <Text style={styles.sectionTitle}>{t("history.title")}</Text>
-          
+
           {filteredData.length > 0 && (
             <View style={styles.statsContainer}>
-              <Text style={styles.statsText}>
-                {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} found
-              </Text>
+              <Text style={styles.statsText}>{filteredData.length + t("history.found")}</Text>
             </View>
           )}
         </View>

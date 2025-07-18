@@ -1,22 +1,15 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Platform,
-  TextInput,
-  Alert
-} from "react-native";
-import Modal from "react-native-modal";
-import * as ImagePicker from "expo-image-picker";
-import DropDownPicker from "react-native-dropdown-picker";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { Alert, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import Modal from "react-native-modal";
 import API from "../utils/ApiConfig";
+
+const { height } = Dimensions.get("window");
 
 export default function FormizinPopup({ visible, onClose, events, disabledDates }) {
   const tomorrow = new Date();
@@ -33,17 +26,14 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
   const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
 
-
   useEffect(() => {
     setItems([
       { label: t("form.jenis.sakit"), value: "sakit" },
       { label: t("form.jenis.izin"), value: "izin" },
       { label: t("form.jenis.cuti"), value: "cuti" },
-      { label: t("form.jenis.sebagian"), value: "sebagian"},
+      { label: t("form.jenis.sebagian"), value: "sebagian" },
     ]);
   }, [t, i18n.language]);
-
-  
 
   const resetForm = () => {
     setStartDate(tomorrow);
@@ -63,7 +53,7 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
   const isHariLibur = (date) => {
     const ymd = date.toISOString().slice(0, 10);
-    const isEventHoliday = Array.isArray(events) && events.some(event => event.start?.date === ymd);
+    const isEventHoliday = Array.isArray(events) && events.some((event) => event.start?.date === ymd);
     const day = date.getDay();
     const isWeekend = day === 0 || day === 6;
     const isDisabled = disabledDates.includes(ymd);
@@ -113,83 +103,182 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
       month: "2-digit",
       year: "numeric",
     });
-  
 
-    const submitIzin = async () => {
-      if (!startDate || !endDate || !jenis || !image) {
-      Alert.alert('Error', 'Semua field wajib diisi dan foto harus diambil');
-        return;
-      }
-      console.log(startDate)
-      if (isHariLibur(startDate) || isHariLibur(endDate)) {
-        Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
-        return;
-      }
-  
-      let id_pengguna = null;
-      try {
-        const userDataString = await AsyncStorage.getItem('userData');
-        if (userDataString) {
-          const userData = JSON.parse(userDataString);
-          id_pengguna = userData.id_pengguna;
-        }
-      } catch (e) {
-        Alert.alert('Error', 'Gagal mengambil data pengguna');
-        return;
-      }
+  const submitIzin = async () => {
+    if (!startDate || !endDate || !jenis || !image) {
+      Alert.alert("Error", "Semua field wajib diisi dan foto harus diambil");
+      return;
+    }
+    console.log(startDate);
+    if (isHariLibur(startDate) || isHariLibur(endDate)) {
+      Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
+      return;
+    }
 
-      if (!id_pengguna) {
-        Alert.alert('Error', 'ID Pengguna tidak ditemukan');
-        return;
+    let id_pengguna = null;
+    try {
+      const userDataString = await AsyncStorage.getItem("userData");
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        id_pengguna = userData.id_pengguna;
       }
+    } catch (e) {
+      Alert.alert("Error", "Gagal mengambil data pengguna");
+      return;
+    }
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri: image,
-        name: 'bukti_izin.jpg',
-        type: 'image/jpeg',
-      });
+    if (!id_pengguna) {
+      Alert.alert("Error", "ID Pengguna tidak ditemukan");
+      return;
+    }
 
-      formData.append('izin', JSON.stringify({
+    const formData = new FormData();
+    formData.append("file", {
+      uri: image,
+      name: "bukti_izin.jpg",
+      type: "image/jpeg",
+    });
+
+    formData.append(
+      "izin",
+      JSON.stringify({
         tanggal_awal: startDate.toISOString(),
         tanggal_akhir: endDate.toISOString(),
         jenis_izin: jenis,
         id_pengguna: id_pengguna,
-        keterangan: keterangan
-      }));
+        keterangan: keterangan,
+      })
+    );
 
-      try {
-        const res = await axios.post(API.IZIN, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        Alert.alert('Sukses', res.data.message);
-      } catch (err) {
-        Alert.alert('Error', 'Gagal mengirim data absensi');
-      }
-      resetForm();
-    };
+    try {
+      const res = await axios.post(API.IZIN, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      Alert.alert("Sukses", res.data.message);
+      handleClose();
+    } catch (err) {
+      Alert.alert("Error", "Gagal mengirim data absensi");
+    }
+  };
 
   return (
-    <Modal
-      isVisible={visible}
-      onBackdropPress={onClose}
-      onSwipeComplete={onClose}
-      swipeDirection="down"
-      style={styles.modal}
-    >
+    <Modal isVisible={visible} style={styles.modal}>
       <View style={styles.container}>
-        <View style={styles.topBar} />
-        <Text style={styles.title}>{t("form.title")}</Text>
+        {/* Enhanced Modal Header */}
+        <View style={styles.modalHeader}>
+          <View style={styles.greyLine} />
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>{t("form.title")}</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        <Text style={styles.label}>{t("form.tglAwal")}</Text>
-        <TouchableOpacity
-          style={styles.input}
-          onPress={() => setShowStartPicker(true)}
-        >
-          <Text>{formatDate(startDate)}</Text>
-        </TouchableOpacity>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Leave Type Section */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>{t("form.jenis.title")}</Text>
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[styles.toggleButton, jenis === "FULL" && styles.toggleButtonSelected]}
+                onPress={() => setJenis("FULL")}>
+                <Text style={jenis === "FULL" ? styles.toggleTextSelected : styles.toggleText}>
+                  {t("form.jenis.full")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.toggleButton, jenis === "PART" && styles.toggleButtonSelected]}
+                onPress={() => setJenis("PART")}>
+                <Text style={jenis === "PART" ? styles.toggleTextSelected : styles.toggleText}>
+                  {t("form.jenis.part")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {jenis === "FULL" ? (
+            <>
+              {/* Date Selection Section */}
+              <View style={styles.formSection}>
+                <View style={styles.dateRow}>
+                  <View style={styles.dateItem}>
+                    <Text style={styles.label}>{t("form.tglAwal")}</Text>
+                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowStartPicker(true)}>
+                      <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
+                      <Text style={styles.dateText}>{formatDate(startDate)}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.dateSeparator}>
+                    <Ionicons name="arrow-forward" size={20} color="#8E8E93" />
+                  </View>
+
+                  <View style={styles.dateItem}>
+                    <Text style={styles.label}>{t("form.tglAkhir")}</Text>
+                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowEndPicker(true)}>
+                      <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
+                      <Text style={styles.dateText}>{formatDate(endDate)}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* Document Upload Section */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
+                <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
+                  <View style={styles.uploadPlaceholder}>
+                    <View style={styles.uploadIconContainer}>
+                      <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                    </View>
+                    <Text style={styles.uploadSubtext}>{t("form.img")}</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Description Section */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.keterangan")}</Text>
+                <TextInput
+                  style={styles.descriptionInput}
+                  placeholder={t("form.placeholderKet")}
+                  placeholderTextColor="#8E8E93"
+                  value={keterangan}
+                  onChangeText={setKeterangan}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+            </>
+          ) : jenis === "PART" ? (
+            <>
+              <Text>{t("form.jenis.part")}</Text>
+            </>
+          ) : (
+            <View style={styles.warningContainer}>
+              <Ionicons name="alert-circle" size={50} color="#FFC107" />
+              <Text style={styles.warningText}>{t("form.jenis.default")}</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Enhanced Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>{t("form.btnClose")}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.submitButton} onPress={submitIzin}>
+            <Text style={styles.submitText}>{t("form.btnConfirm")}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Date Pickers */}
         {showStartPicker && (
           <DateTimePicker
             value={startDate}
@@ -201,13 +290,6 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
           />
         )}
 
-        <Text style={styles.label}>{t("form.tglAkhir")}</Text>
-        <TouchableOpacity
-          style={styles.input}
-          onPress={() => setShowEndPicker(true)}
-        >
-          <Text>{formatDate(endDate)}</Text>
-        </TouchableOpacity>
         {showEndPicker && (
           <DateTimePicker
             value={endDate}
@@ -215,55 +297,8 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
             display="default"
             onChange={handleEndChange}
             minimumDate={startDate}
-            
           />
         )}
-
-        <Text style={styles.label}>{t("form.jenis.title")}</Text>
-        <DropDownPicker
-          open={open}
-          value={jenis}
-          items={items}
-          setOpen={setOpen}
-          setValue={setJenis}
-          setItems={setItems}
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownContainer}
-          placeholder={t("form.jenis.default")}
-        />
-
-        <Text style={styles.label}>{t("form.bukti")}</Text>
-        <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
-          {image ? (
-            <Image source={{ uri: image }} style={styles.image} />
-          ) : (
-            <Text style={{ color: "#fff" }}>{t("form.img")}</Text>
-          )}
-        </TouchableOpacity>
-
-        <Text style={styles.label}>Keterangan</Text>
-        <TextInput
-          style={styles.keteranganInput}
-          placeholder="Masukkan keterangan tambahan"
-          value={keterangan}
-          onChangeText={setKeterangan}
-          multiline
-          numberOfLines={4}
-        />
-
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={submitIzin}
-        >
-          <Text style={styles.submitText}>{t("form.btnConfirm")}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleClose}
-          style={{ marginTop: 12, alignSelf: "center" }}
-        >
-          <Text style={{ color: "#2E7BE8" }}>{t("form.btnClose")}</Text>
-        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -276,83 +311,241 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: "#fff",
-    padding: 24,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    maxHeight: "90%",
   },
-  topBar: {
-    height: 5,
-    width: 60,
-    backgroundColor: "#ccc",
-    borderRadius: 999,
+  modalHeader: {
+    paddingTop: 12,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+    marginBottom: 20,
+  },
+  greyLine: {
+    height: 4,
+    width: 40,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 2,
     alignSelf: "center",
     marginBottom: 16,
   },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
   title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#1C1C1E",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  scrollContent: {
+    maxHeight: height * 0.6,
+    paddingHorizontal: 20,
+  },
+  formSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
-    color: "#6B7280",
+    color: "#1C1C1E",
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
-    marginTop: 8,
-    marginBottom: 4,
+    fontWeight: "600",
     color: "#2E7BE8",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 14 : 12,
     marginBottom: 8,
   },
-  dropdown: {
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    zIndex: 1000,
+  placeholderStyle: {
+    color: "#8E8E93",
+    fontSize: 16,
   },
-  dropdownContainer: {
-    borderColor: "#ccc",
-    zIndex: 1000,
+  dropdownText: {
+    fontSize: 16,
+    color: "#1C1C1E",
   },
-  imageBox: {
-    backgroundColor: "#999",
-    height: 100,
-    borderRadius: 8,
-    justifyContent: "center",
+  dateRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 12,
   },
-  image: {
+  dateItem: {
+    flex: 1,
+  },
+  dateSeparator: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  dateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#1C1C1E",
+    fontWeight: "500",
+  },
+  imageUploadContainer: {
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#F8F9FA",
+    borderWidth: 2,
+    borderColor: "#E5E5EA",
+    borderStyle: "dashed",
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    height: 200,
+  },
+  imagePreview: {
     width: "100%",
     height: "100%",
-    borderRadius: 8,
+  },
+  imageOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  changeImageText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  uploadPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  uploadIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#E3F2FD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  uploadText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1C1C1E",
+    marginBottom: 4,
+  },
+  uploadSubtext: {
+    fontSize: 14,
+    color: "#8E8E93",
+  },
+  descriptionInput: {
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#1C1C1E",
+    minHeight: 100,
+  },
+  jenisButtons: {
+    flexDirection: "row",
+    gap: 20,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F2F2F7",
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#F2F2F7",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#8E8E93",
   },
   submitButton: {
+    flex: 2,
     backgroundColor: "#2E7BE8",
-    paddingVertical: 14,
-    borderRadius: 999,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 16,
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
   submitText: {
     color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
   },
-  keteranganInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: 10,
+  },
+
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 80,
-    textAlignVertical: "top",
-    marginBottom: 8,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+  },
+
+  toggleButtonSelected: {
+    backgroundColor: "#007AFF",
+  },
+
+  toggleText: {
+    color: "#333",
+    fontWeight: "500",
+  },
+
+  toggleTextSelected: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  warningContainer: {
+    // flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF8E1",
+    padding: 10,
+    marginVertical: 20,
+    borderRadius: 16,
+  },
+  warningText: {
+    color: "#F57F17",
+    flexShrink: 1,
+    fontWeight: "bold",
   },
 });

@@ -1,6 +1,6 @@
 {
   "general": {
-    "loading": "Memuat...",
+    "loading": "Memuat Data...",
     "masuk": "Masuk",
     "pulang": "Pulang",
     "absen": "Absen",
@@ -8,11 +8,12 @@
     "izin": "Izin",
     "sakit": "Sakit",
     "cuti": "Cuti",
-    "alfa": "Alfa",
+    "alfa": "Alpa",
     "welcome": "Selamat Datang di E-Present!",
     "semua": "Semua",
     "yes": "Ya",
-    "no": "Tidak"
+    "no": "Tidak",
+    "repeat": "Coba Lagi"
   },
   "home": {
     "statistik": "Absensi Bulan Ini",
@@ -46,13 +47,18 @@
   },
   "history": {
     "title": "Riwayat Absensi",
+    "subtitle":"Berikut data riwayat absensi anda",
     "blank": "Tidak ada rekap absensi di bulan ini.",
     "bulan": "Bulan",
     "tahun": "Tahun",
     "jenis": "Jenis Absensi",
     "btn": "Terapkan",
     "tidakMasuk": "Tidak Masuk",
-    "semuaWaktu": "Semua Waktu"
+    "semuaWaktu": "Semua Waktu",
+    "found": " data ditemukan",
+    "detail": "Detail Absensi",
+    "checkIn": "Bukti Absen Masuk",
+    "checkOut": "Bukti Absen Pulang"
   },
   "notif": {},
   "camera": {
@@ -61,7 +67,7 @@
     "desc2": "Pastikan GPS anda aktif dan berada di lokasi bekerja"
   },
   "form": {
-    "title": "Pengajuan Izin",
+    "title": "Form Pengajuan Izin",
     "tglAwal": "Tanggal Awal",
     "tglAkhir": "Tanggal Akhir",
     "bukti": "Bukti Izin",
@@ -70,12 +76,12 @@
     "btnClose": "Tutup",
     "jenis": {
       "title": "Jenis Izin",
-      "izin": "Izin",
-      "sakit": "Sakit",
-      "cuti": "Cuti",
-      "sebagian": "Izin Sebagian Waktu",
-      "default": "Pilih Jenis Izin"
-    }
+      "full": "Izin Satu Hari / Panjang",
+      "part": "Izin Sebagian Waktu",
+      "default": "Pilih Salah Satu Jenis Izin!"
+    },
+    "keterangan": "Keterangan Izin",
+    "placeholderKet": "Tuliskan keterangan izin di sini.\n\nContoh: Sakit / Cuti Acara Keluarga."
   },
   "result": {
     "error": "GAGAL!",
