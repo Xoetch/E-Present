@@ -105,6 +105,22 @@ export default function ProfileScreen({ onLogout }) {
     ]);
   };
 
+  // Helper function to construct correct image URL
+  const constructImageUrl = (imagePath) => {
+    if (!imagePath) return "";
+    // If it's already a full URL, extract just the path part
+    if (imagePath.includes('http')) {
+      const url = new URL(imagePath);
+      return `${API.BASE_URL}${url.pathname}`;
+    }
+    // If it's just a path, construct the full URL
+    if (imagePath.startsWith('/')) {
+      return `${API.BASE_URL}${imagePath}`;
+    }
+    // If it's just a filename, assume it's in uploads folder
+    return `${API.BASE_URL}/uploads/${imagePath}`;
+  };
+
   const updateProfilePic = async (uri) => {
     let id_pengguna = null;
 
@@ -138,12 +154,18 @@ export default function ProfileScreen({ onLogout }) {
       });
       if (res.data && res.data.data) {
         const updatedData = res.data.data;
+        
+        // Fix the image URL to use correct base URL
+        const correctedImageUrl = constructImageUrl(updatedData.foto_pengguna);
+        
         const newUserData = {
           ...userData,
-          foto_pengguna: updatedData.foto_pengguna,
+          foto_pengguna: correctedImageUrl,
         };
+        
         await AsyncStorage.setItem("userData", JSON.stringify(newUserData));
         setUserData(newUserData);
+        setImage(correctedImageUrl);
 
         const verifyData = await AsyncStorage.getItem("userData");
         console.log("✅ AsyncStorage updated:", JSON.parse(verifyData));
