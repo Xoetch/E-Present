@@ -4,6 +4,7 @@
     "masuk": "Masuk",
     "pulang": "Pulang",
     "absen": "Absen",
+    "hadir": "Hadir",
     "izin": "Izin",
     "sakit": "Sakit",
     "cuti": "Cuti",
@@ -14,10 +15,13 @@
     "no": "Tidak"
   },
   "home": {
-    "statistik": "Kehadiran sebulan terakhir",
+    "statistik": "Absensi Bulan Ini",
     "history": "Riwayat Kehadiran",
     "lihat": "Lihat Selengkapnya",
-    "calendar": "Kalender"
+    "calendar": "Kalender",
+    "todayInfo": "Absensi Hari Ini",
+    "checkIn": "Absen Masuk",
+    "checkOut": "Absen Pulang"
   },
   "bar": {
     "home": "Beranda",
@@ -69,6 +73,7 @@
       "izin": "Izin",
       "sakit": "Sakit",
       "cuti": "Cuti",
+      "sebagian": "Izin Sebagian Waktu",
       "default": "Pilih Jenis Izin"
     }
   },

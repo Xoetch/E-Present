@@ -135,10 +135,6 @@ export default function LoginScreen({ onLoginSuccess }) {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity>
-                <Text style={styles.forgot}>{t("login.forgor")}</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleLogin}
@@ -183,7 +179,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 20,
   },
   passwordContainer: {
     width: "100%",
@@ -194,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: "center",
     height: 48,
-    marginBottom: 12,
+    marginBottom: 40
   },
   passwordInput: {
     flex: 1,

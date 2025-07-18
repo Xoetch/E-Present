@@ -39,6 +39,7 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
       { label: t("form.jenis.sakit"), value: "sakit" },
       { label: t("form.jenis.izin"), value: "izin" },
       { label: t("form.jenis.cuti"), value: "cuti" },
+      { label: t("form.jenis.sebagian"), value: "sebagian"},
     ]);
   }, [t, i18n.language]);
 

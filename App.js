@@ -132,7 +132,7 @@ useEffect(() => {
               </Stack.Screen>
               <Stack.Screen name="CameraScreen" component={CameraScreen} />
               <Stack.Screen name="FormIzinScreen" component={FormizinScreen} />
-              <Stack.Screen name="ResultModal" component={resultModal} />
+              {/* <Stack.Screen name="ResultModal" component={resultModal} /> */}
               <Stack.Screen name="LocationMap" component={LocationMapScreen} />
             </>
           )}

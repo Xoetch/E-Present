@@ -2,16 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import CalendarWithHoliday, { isHariLibur } from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
@@ -24,6 +15,12 @@ const screenHeight = Dimensions.get("window").height;
 
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
+
+  const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().split("T")[0]);
+  const [todayAttendance, setTodayAttendance] = useState({
+    jam_masuk: null,
+    jam_keluar: null,
+  });
 
   const [chartData, setChartData] = useState([]);
   const [events, setEvents] = useState([]);
@@ -49,6 +46,17 @@ export default function HomeScreen({ navigation }) {
   const [recentAttendance, setRecentAttendance] = useState([]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toISOString().split("T")[0];
+      if (now !== currentDateStr) {
+        setCurrentDateStr(now);
+      }
+    }, 60 * 1000); // Cek setiap 1 menit
+
+    return () => clearInterval(interval);
+  }, [currentDateStr]);
+
+  useEffect(() => {
     const fetchAttendanceHistory = async () => {
       try {
         const userDataStr = await AsyncStorage.getItem("userData");
@@ -62,10 +70,18 @@ export default function HomeScreen({ navigation }) {
 
         if (!result?.data) return;
 
-        const hadirData = result.data.filter(
-          (item) => item.status_kehadiran === "Hadir"
-        );
+        const hadirData = result.data.filter((item) => item.status_kehadiran === "Hadir");
 
+        const todayEntry = result.data.find((item) => item.tanggal === today);
+
+        if (todayEntry) {
+          setTodayAttendance({
+            jam_masuk: todayEntry.jam_masuk || null,
+            jam_keluar: todayEntry.jam_keluar || null,
+          });
+        } else {
+          setTodayAttendance({ jam_masuk: null, jam_keluar: null });
+        }
         let converted = [];
         hadirData.forEach((item) => {
           if (item.jam_masuk) {
@@ -93,29 +109,43 @@ export default function HomeScreen({ navigation }) {
           return dateTimeB - dateTimeA;
         });
         setRecentAttendance(converted.slice(0, 3)); // tampilkan 3 terakhir
-        
-        fetch(`${API.PIE_CHART}/${userId}`) // ganti dengan endpoint Anda
-        .then(res => res.json())
-        .then(json => {
-          const colors = ['#4CAF50', '#FFC107', '#F44336', '#2196F3']; // bisa ditambah
-          const pieData = json.labels.map((label, index) => ({
-            name: label,
-            population: json.data[index],
-            color: colors[index % colors.length],
-            legendFontColor: '#333',
-            legendFontSize: 14,
-          }));
-          setChartData(pieData);
 
+       fetch(`${API.PIE_CHART}/${userId}`)
+          .then((res) => res.json())
+          .then((json) => {
+            const getColorByStatus = (label) => {
+              const normalizedLabel = label.toLowerCase();
+              
+              if (normalizedLabel.includes('alfa') || normalizedLabel.includes('alpa')) {
+                return "#F44336"; // Red for Alfa
+              } else if (normalizedLabel.includes('izin')) {
+                return "#FFC107"; // Yellow/Orange for Izin
+              } else if (normalizedLabel.includes('hadir')) {
+                return "#4CAF50"; // Green for Hadir
+              } else if (normalizedLabel.includes('sakit')) {
+                return "#42A5F5" 
+              } else {
+                return "#9E9E9E"; // Gray for others
+              }
+            };
 
-        });
+            const pieData = json.labels.map((label, index) => ({
+              name: label,
+              population: json.data[index],
+              color: getColorByStatus(label),
+              legendFontColor: "#333",
+              legendFontSize: 14,
+            }));
+            setChartData(pieData);
+            console.log(pieData);
+          });
 
         const responseExistingIzin = await fetch(`${API.EXISTING_IZIN}/${userId}`);
         const resultExistingIzin = await responseExistingIzin.json();
         console.log("Existing Izin:", resultExistingIzin.data);
 
         if (resultExistingIzin?.data) {
-          const existingDates = resultExistingIzin.data.map(item => item.tanggal);
+          const existingDates = resultExistingIzin.data.map((item) => item.tanggal);
           setDisabledDates(existingDates);
         }
       } catch (err) {
@@ -124,7 +154,7 @@ export default function HomeScreen({ navigation }) {
     };
 
     fetchAttendanceHistory();
-  }, []);
+  }, [currentDateStr]);
 
   useEffect(() => {
     console.log("Events di FormizinPopup:", events);
@@ -217,139 +247,155 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.blueBackground} />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Enhanced Header Section */}
         <View style={styles.header}>
-          <Image
-            source={{
-              uri: userData.foto_pengguna
-                ? userData.foto_pengguna
-                : "https://upload.wikimedia.org/wikipedia/commons/7/73/Lion_waiting_in_Namibia.jpg",
-            }}
-            style={styles.profileImage}
-          />
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.welcome}>{t("general.welcome")}</Text>
-            <Text style={styles.userName}>{userData.nama_lengkap}</Text>
+          <View style={styles.profileSection}>
+            <Image
+              source={{
+                uri: userData.foto_pengguna
+                  ? userData.foto_pengguna
+                  : "https://upload.wikimedia.org/wikipedia/commons/7/73/Lion_waiting_in_Namibia.jpg",
+              }}
+              style={styles.profileImage}
+            />
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.welcome}>{t("general.welcome")}</Text>
+              <Text style={styles.userName}>{userData.nama_lengkap}</Text>
+            </View>
           </View>
         </View>
 
-        <Animated.View
-          style={[
-            styles.whiteContainer,
-            { transform: [{ translateY: animatedValue }] },
-          ]}
-        >
+        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
           <View style={styles.greyLine} />
-          <WithLoader loading={loadingTime}>
-            <Text style={styles.time}>{currentTime}</Text>
-          </WithLoader>
+          
+          {/* Time Section */}
+          <View style={styles.timeSection}>
+            <WithLoader loading={loadingTime}>
+              <Text style={styles.time}>{currentTime}</Text>
+            </WithLoader>
+            <Text style={styles.timeSubtitle}>
+              {new Date(currentDateStr).toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              })}</Text>
+          </View>
 
+          {/* Action Buttons Section */}
           <View style={styles.actionCard}>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                (libur || isTodayDisabled) && { opacity: 0.5 }
-              ]}
+              style={[styles.actionButton, (libur || isTodayDisabled) && styles.disabledButton]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={libur || isTodayDisabled}
-            >
-              <Ionicons name="scan" size={24} color="#2E7BE8" />
+              disabled={libur || isTodayDisabled}>
+              <View style={[styles.actionIconContainer, styles.scanIconContainer]}>
+                <Ionicons name="scan" size={24} color="#fff" />
+              </View>
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => setShowFormIzin(true)}
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={24}
-                color="#2E7BE8"
-              />
+            <TouchableOpacity style={styles.actionButton} onPress={() => setShowFormIzin(true)}>
+              <View style={[styles.actionIconContainer, styles.documentIconContainer]}>
+                <Ionicons name="document-text-outline" size={24} color="#fff" />
+              </View>
               <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Today's Attendance Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
-            <PieChart
-              data={chartData}
-              width={screenWidth - 32}
-              height={150}
-              chartConfig={{
-                backgroundColor: "#fff",
-                backgroundGradientFrom: "#fff",
-                backgroundGradientTo: "#fff",
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              }}
-              accessor={"population"}
-              backgroundColor={"transparent"}
-              paddingLeft={"15"}
-              absolute
-            />
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{t("home.todayInfo")}</Text>
+              <View style={styles.cardTitleUnderline} />
+            </View>
+            <View style={styles.attendanceRow}>
+              <View style={[styles.attendanceItem]}>
+                <View style={styles.attendanceIconContainer}>
+                  <Ionicons name="log-in-outline" size={20} color="#4CAF50" />
+                </View>
+                <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
+                <Text style={styles.attendanceTime}>
+                  {todayAttendance.jam_masuk ? formatToAMPM(todayAttendance.jam_masuk) : "-"}
+                </Text>
+              </View>
+              
+              <View style={styles.attendanceDivider} />
+              
+              <View style={styles.attendanceItem}>
+                <View style={styles.attendanceIconContainer}>
+                  <Ionicons name="log-out-outline" size={20} color="#F44336" />
+                </View>
+                <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
+                <Text style={styles.attendanceTime}>
+                  {todayAttendance.jam_keluar ? formatToAMPM(todayAttendance.jam_keluar) : "-"}
+                </Text>
+              </View>
+            </View>
           </View>
 
+          {/* Statistics Card */}
           <View style={styles.card}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.cardTitle}>{t("home.history")}</Text>
-              <TouchableOpacity onPress={() => handleNavigation("Riwayat")}>
-                <Text style={styles.link}>{t("home.lihat")}</Text>
-              </TouchableOpacity>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
+              <View style={styles.cardTitleUnderline} />
+            </View>
+            <View style={styles.chartContainer}>
+              <PieChart
+                data={chartData}
+                width={screenWidth - 64}
+                height={150}
+                chartConfig={{
+                  backgroundColor: "#fff",
+                  backgroundGradientFrom: "#fff",
+                  backgroundGradientTo: "#fff",
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                }}
+                accessor={"population"}
+                backgroundColor={"transparent"}
+                paddingLeft={"15"}
+                absolute
+              />
+            </View>
+          </View>
+
+          {/* Recent History Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.cardTitle}>{t("home.history")}</Text>
+                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
+                  <Text style={styles.link}>{t("home.lihat")}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.cardTitleUnderline} />
             </View>
 
-            <View style={{ marginTop: 8 }}>
+            <View style={styles.historyList}>
               {recentAttendance.map((item) => (
-                <View
-                  key={item.id}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "#fff",
-                    borderRadius: 12,
-                    padding: 12,
-                    marginBottom: 10,
-                    elevation: 2,
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor:
-                        item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336",
-                      borderRadius: 25,
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
+                <View key={item.id} style={styles.historyItem}>
+                  <View style={[
+                    styles.historyIconContainer,
+                    item.type === "Masuk Kerja" ? styles.checkInIcon : styles.checkOutIcon
+                  ]}>
                     <Ionicons name="time-outline" size={20} color="#fff" />
                   </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color:
-                          item.type === "Masuk Kerja" ? "#2E7BE8" : "#F44336",
-                        fontWeight: "bold",
-                        fontSize: 14,
-                      }}
-                    >
+                  <View style={styles.historyContent}>
+                    <Text style={[
+                      styles.historyType,
+                      { color: item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336" }
+                    ]}>
                       {item.type}
                     </Text>
-                    <Text style={{ color: "#888", fontSize: 12 }}>
-                      {item.date}
-                    </Text>
+                    <Text style={styles.historyDate}>{item.date}</Text>
                   </View>
 
-                  <Text
-                    style={{
-                      color:
-                        item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336",
-                      fontWeight: "bold",
-                      fontSize: 14,
-                    }}
-                  >
+                  <Text style={[
+                    styles.historyTime,
+                    { color: item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336" }
+                  ]}>
                     {formatToAMPM(item.time)}
                   </Text>
                 </View>
@@ -357,8 +403,12 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
+          {/* Calendar Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
+              <View style={styles.cardTitleUnderline} />
+            </View>
             <View style={styles.calendarContainer}>
               <CalendarWithHoliday onEventsChange={setEvents} />
             </View>
@@ -377,7 +427,10 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: "#2E7BE8" },
+  wrapper: {
+    flex: 1,
+    backgroundColor: "#2E7BE8",
+  },
   blueBackground: {
     position: "absolute",
     top: 0,
@@ -385,84 +438,234 @@ const styles = StyleSheet.create({
     right: 0,
     height: 220,
   },
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 24,
     marginHorizontal: 16,
     marginTop: 32,
-    backgroundColor: "transparent",
   },
-  profileImage: { width: 56, height: 56, borderRadius: 28, marginRight: 16 },
-  headerTextContainer: { flex: 1 },
-  welcome: { color: "#fff", fontSize: 13 },
-  userName: { color: "#fff", fontWeight: "bold", fontSize: 16, marginTop: 2 },
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  welcome: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  userName: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginTop: 4,
+  },
   whiteContainer: {
     backgroundColor: "#fff",
     marginTop: -12,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 24,
-    height: "100%",
+    minHeight: screenHeight,
   },
   greyLine: {
-    height: 6,
-    width: 80,
-    backgroundColor: "#ccc",
-    borderRadius: 3,
+    height: 4,
+    width: 40,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 8,
+    marginBottom: 20,
+  },
+  timeSection: {
+    alignItems: "center",
+    marginBottom: 24,
   },
   time: {
-    textAlign: "center",
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginVertical: 16,
-    color: "#6B7280",
+    color: "#1A1A1A",
+    letterSpacing: 1,
+  },
+  timeSubtitle: {
+    fontSize: 14,
+    color: "#8E8E93",
+    marginTop: 4,
+    fontWeight: "500",
   },
   actionCard: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginHorizontal: 16,
     backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 12,
-    elevation: 2,
-    marginBottom: 16,
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: 24,
   },
   actionButton: {
     alignItems: "center",
     justifyContent: "center",
+    flex: 1,
   },
-  actionLabel: {
-    color: "#2E7BE8",
-    fontSize: 12,
-    marginTop: 4,
-    fontWeight: "bold",
+  disabledButton: {
+    opacity: 0.5,
+  },
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 8,
+  },
+  scanIconContainer: {
+    backgroundColor: "#2E7BE8",
+  },
+  documentIconContainer: {
+    backgroundColor: "#FF9500",
+  },
+  actionLabel: {
+    color: "#1A1A1A",
+    fontSize: 14,
+    fontWeight: "600",
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 20,
     marginHorizontal: 16,
-    padding: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  cardHeader: {
     marginBottom: 16,
-    elevation: 2,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: "bold",
+    color: "#1A1A1A",
     marginBottom: 8,
-    color: "#444",
+  },
+  cardTitleUnderline: {
+    height: 3,
+    width: 30,
+    backgroundColor: "#2E7BE8",
+    borderRadius: 2,
+  },
+  attendanceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  attendanceItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  attendanceIconContainer: {
+    marginBottom: 8,
+  },
+  attendanceLabel: {
+    color: "#8E8E93",
+    fontWeight: "600",
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  attendanceTime: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+  },
+  attendanceDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 20,
+  },
+  chartContainer: {
+    alignItems: "center",
+    paddingVertical: 8,
   },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  link: { fontSize: 12, color: "#2E7BE8" },
-  calendarContainer: {},
+  linkContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  link: {
+    fontSize: 14,
+    color: "#2E7BE8",
+    fontWeight: "600",
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  historyIconContainer: {
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  checkInIcon: {
+    backgroundColor: "#4CAF50",
+  },
+  checkOutIcon: {
+    backgroundColor: "#F44336",
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyType: {
+    fontWeight: "bold",
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  historyDate: {
+    color: "#8E8E93",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  historyTime: {
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  calendarContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
 });

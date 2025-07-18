@@ -1,96 +1,101 @@
 {
   "general": {
-    "loading": "Loading...",
-    "masuk": "Check In",
-    "pulang": "Check Out",
-    "absen": "Absent",
-    "izin": "Permission",
-    "sakit": "Sick",
-    "cuti": "Leave",
-    "alfa": "Alpha",
-    "welcome": "Welcome to E-Present!",
-    "semua": "All",
-    "yes": "Yes",
-    "no": "No"
+    "loading": "Memuat...",
+    "masuk": "Masuk",
+    "pulang": "Pulang",
+    "absen": "Absen",
+    "hadir": "Hadir",
+    "izin": "Izin",
+    "sakit": "Sakit",
+    "cuti": "Cuti",
+    "alfa": "Alfa",
+    "welcome": "Selamat Datang di E-Present!",
+    "semua": "Semua",
+    "yes": "Ya",
+    "no": "Tidak"
   },
   "home": {
-    "statistik": "Attendance for the Last Month",
-    "history": "Attendance History",
-    "lihat": "View More",
-    "calendar": "Calendar"
+    "statistik": "Absensi Bulan Ini",
+    "history": "Riwayat Kehadiran",
+    "lihat": "Lihat Selengkapnya",
+    "calendar": "Kalender",
+    "todayInfo": "Absensi Hari Ini",
+    "checkIn": "Absen Masuk",
+    "checkOut": "Absen Pulang"
   },
   "bar": {
-    "home": "Home",
-    "history": "History",
-    "profile": "Profile"
+    "home": "Beranda",
+    "history": "Riwayat",
+    "profile": "Profil"
   },
   "login": {
-    "username": "Username",
-    "password": "Password",
-    "login": "Login",
-    "forgor": "Forgot Password?"
+    "username": "Nama Pengguna",
+    "password": "Kata Sandi",
+    "login": "Masuk",
+    "forgor": "Lupa Kata Sandi?"
   },
   "profile": {
-    "name": "Employee Profile",
-    "address": "Address",
-    "shift": "Work Shift",
-    "Localization": "Language Settings",
-    "eng": "English",
-    "ind": "Indonesian",
-    "logout": "Logout",
-    "Konfirmasi": "Are you sure want to logout?"
+    "name": "Profil Pekerja",
+    "address": "Alamat",
+    "shift": "Shift Kerja",
+    "Localization": "Pengaturan Bahasa",
+    "eng": "Bahasa Inggris",
+    "ind": "Bahasa Indonesia",
+    "logout": "Keluar",
+    "Konfirmasi": "Anda yakin ingin keluar?"
   },
   "history": {
-    "title": "Attendance History",
-    "blank": "No attendance records for this month.",
-    "bulan": "Month",
-    "tahun": "Year",
-    "jenis": "Attendance Type",
-    "btn": "Apply",
-    "tidakMasuk": "Did Not Attend",
-    "semuaWaktu": "All Time"
+    "title": "Riwayat Absensi",
+    "blank": "Tidak ada rekap absensi di bulan ini.",
+    "bulan": "Bulan",
+    "tahun": "Tahun",
+    "jenis": "Jenis Absensi",
+    "btn": "Terapkan",
+    "tidakMasuk": "Tidak Masuk",
+    "semuaWaktu": "Semua Waktu"
   },
   "notif": {},
   "camera": {
-    "warn": "Warning!",
-    "desc1": "Make sure your camera is active and facing your face.",
-    "desc2": "Make sure your GPS is active and you are at your work location"
+    "warn": "Perhatian!",
+    "desc1": "Pastikan kamera anda aktif dan menghadap ke wajah anda.",
+    "desc2": "Pastikan GPS anda aktif dan berada di lokasi bekerja"
   },
   "form": {
-    "title": "Permission Request",
-    "tglAwal": "Start Date",
-    "tglAkhir": "End Date",
-    "bukti": "Permission Proof",
-    "img": "Click to Upload Image",
-    "btnConfirm": "Submit",
-    "btnClose": "Close",
+    "title": "Pengajuan Izin",
+    "tglAwal": "Tanggal Awal",
+    "tglAkhir": "Tanggal Akhir",
+    "bukti": "Bukti Izin",
+    "img": "Klik Untuk Unggah Gambar",
+    "btnConfirm": "Ajukan Izin",
+    "btnClose": "Tutup",
     "jenis": {
-      "title": "Permission Type",
-      "izin": "Permission",
-      "sakit": "Sick",
-      "cuti": "Leave",
-      "default": "Select Permission Type"
+      "title": "Jenis Izin",
+      "izin": "Izin",
+      "sakit": "Sakit",
+      "cuti": "Cuti",
+      "sebagian": "Izin Sebagian Waktu",
+      "default": "Pilih Jenis Izin"
     }
   },
   "result": {
-    "error": "FAILED!",
-    "success": "SUCCESS!",
-    "desc1": "you can close this page.",
-    "desc2": "please wait, the system is processing your request...",
-    "desc3": "Uh Oh... It seems an error occurred. Please try again later or contact admin."
+    "error": "GAGAL!",
+    "success": "BERHASIL!",
+    "desc1": "anda dapat menutup halaman ini.",
+    "desc2": "tunggu sebentar, sistem sedang memproses permintaan anda...",
+    "desc3": "Uh Oh... Sepertinya terjadi kesalahan, Silahkan coba lagi nanti atau panggil admin."
   },
   "months": {
-    "january": "January",
-    "february": "February",
-    "march": "March",
+    "january": "Januari",
+    "february": "Februari",
+    "march": "Maret",
     "april": "April",
-    "may": "May",
-    "june": "June",
-    "july": "July",
-    "august": "August",
+    "may": "Mei",
+    "june": "Juni",
+    "july": "Juli",
+    "august": "Agustus",
     "september": "September",
-    "october": "October",
+    "october": "Oktober",
     "november": "November",
-    "december": "December"
+    "december": "Desember"
   }
 }

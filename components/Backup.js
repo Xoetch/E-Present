@@ -462,4 +462,64 @@
                         //     marginBottom: 12,
                         //     backgroundColor: "#f0f0f0",
                         // },
-                        // });
+// });
+
+// NOTE ini adalah bagian backup rekap absensi. Sekarang dimasukin sini dulu karena kemungkinan di replace
+{/* <View style={styles.card}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTitle}>{t("home.history")}</Text>
+              <TouchableOpacity onPress={() => handleNavigation("History")}>
+                <Text style={styles.link}>{t("home.lihat")}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginTop: 8 }}>
+              {recentAttendance.map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#fff",
+                    borderRadius: 12,
+                    padding: 12,
+                    marginBottom: 10,
+                    elevation: 2,
+                  }}>
+                  <View
+                    style={{
+                      backgroundColor: item.type === "Hadir" ? "#4CAF50" : "#F44336",
+                      borderRadius: 25,
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}>
+                    <Ionicons name="time-outline" size={20} color="#fff" />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        color: item.type === "Masuk Kerja" ? "#2E7BE8" : "#F44336",
+                        fontWeight: "bold",
+                        fontSize: 14,
+                      }}>
+                      {item.type}
+                    </Text>
+                    <Text style={{ color: "#888", fontSize: 12 }}>{item.date}</Text>
+                  </View>
+
+                  <Text
+                    style={{
+                      color: item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336",
+                      fontWeight: "bold",
+                      fontSize: 14,
+                    }}>
+                    {formatToAMPM(item.time)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View> */}

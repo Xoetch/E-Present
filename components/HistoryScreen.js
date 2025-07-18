@@ -4,22 +4,54 @@ import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Dimensions, ScrollView } from "react-native";
 import API from "../utils/ApiConfig";
+
+const { width } = Dimensions.get('window');
 
 // Constants - moved outside component to prevent recreation
 const FILTER_ALL = "All";
 const YEAR_RANGE_START = 2020;
 const YEAR_RANGE_LENGTH = 10;
 
-// Status configurations
+// Enhanced status configurations with gradients
 const STATUS_CONFIG = {
-  Hadir: { icon: "checkmark-circle", color: "#4CAF50" },
-  Izin: { icon: "alert-circle", color: "#FFC107" },
-  Sakit: { icon: "medkit", color: "#03A9F4" },
-  Alpa: { icon: "close-circle", color: "#F44336" },
-  Cuti: { icon: "briefcase", color: "#9C27B0" },
-  Lainnya: { icon: "help-circle", color: "#9E9E9E" },
+  Hadir: { 
+    icon: "checkmark-circle", 
+    colors: ["#4CAF50", "#66BB6A"],
+    lightColor: "#E8F5E8",
+    textColor: "#2E7D32"
+  },
+  Izin: { 
+    icon: "alert-circle", 
+    colors: ["#FFC107", "#FFD54F"],
+    lightColor: "#FFF8E1",
+    textColor: "#F57F17"
+  },
+  Sakit: { 
+    icon: "medkit", 
+    colors: ["#03A9F4", "#42A5F5"],
+    lightColor: "#E3F2FD",
+    textColor: "#1565C0"
+  },
+  Alfa: { 
+    icon: "close-circle", 
+    colors: ["#F44336", "#EF5350"],
+    lightColor: "#FFEBEE",
+    textColor: "#C62828"
+  },
+  Cuti: { 
+    icon: "briefcase", 
+    colors: ["#9C27B0", "#BA68C8"],
+    lightColor: "#F3E5F5",
+    textColor: "#7B1FA2"
+  },
+  Lainnya: { 
+    icon: "help-circle", 
+    colors: ["#9E9E9E", "#BDBDBD"],
+    lightColor: "#F5F5F5",
+    textColor: "#616161"
+  },
 };
 
 // Custom hook for user data
@@ -126,7 +158,7 @@ const getBaseStatus = (status) => {
   if (status.startsWith("Izin")) return "Izin";
   if (status === "Hadir") return "Hadir";
   if (status === "Sakit") return "Sakit";
-  if (status === "Alpa") return "Alpa";
+  if (status === "Alfa") return "Alfa";
   if (status === "Cuti") return "Cuti";
 
   return "Lainnya";
@@ -248,26 +280,60 @@ export default function HistoryScreen() {
     setModalVisible(true);
   }, [selectedMonth, selectedYear, selectedType]);
 
-  // Render item component
+  // Render item component with enhanced design
   const renderItem = useCallback(
     ({ item }) => {
       if (!item || !item.status_kehadiran) return null;
 
       const baseStatus = getBaseStatus(item.status_kehadiran);
-      const { icon, color } = STATUS_CONFIG[baseStatus];
+      const { icon, colors, lightColor, textColor } = STATUS_CONFIG[baseStatus];
 
       return (
         <TouchableOpacity onPress={() => handleItemPress(item)} style={styles.itemContainer}>
-          <View style={[styles.circleIcon, { backgroundColor: color }]}>
-            <Ionicons name={icon} size={20} color="#fff" />
+          <View style={[styles.statusIndicator, { backgroundColor: lightColor }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors[0] }]}>
+              <Ionicons name={icon} size={24} color="#fff" />
+            </View>
           </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.typeText}>{item.status_kehadiran}</Text>
-            <Text style={styles.dateText}>{item.tanggal}</Text>
-            <Text style={[styles.timeText, { color }]}>
-              {formatTime(item.jam_masuk)} | {formatTime(item.jam_keluar)}
-            </Text>
-            <Text style={styles.dateText}>Shift: {item.shift_kerja || "-"}</Text>
+          
+          <View style={styles.contentSection}>
+            <View style={styles.headerRow}>
+              <Text style={[styles.statusText, { color: textColor }]}>{item.status_kehadiran}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: lightColor }]}>
+                <Text style={[styles.badgeText, { color: textColor }]}>
+                  {baseStatus}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.dateRow}>
+              <Ionicons name="calendar-outline" size={14} color="#8E8E93" />
+              <Text style={styles.dateText}>{item.tanggal}</Text>
+            </View>
+            
+            <View style={styles.timeRow}>
+              <View style={styles.timeItem}>
+                <Ionicons name="log-in-outline" size={14} color="#34C759" />
+                <Text style={styles.timeLabel}>Masuk</Text>
+                <Text style={[styles.timeValue, { color: "#34C759" }]}>
+                  {formatTime(item.jam_masuk)}
+                </Text>
+              </View>
+              
+              <View style={styles.timeSeparator} />
+              
+              <View style={styles.timeItem}>
+                <Ionicons name="log-out-outline" size={14} color="#FF3B30" />
+                <Text style={styles.timeLabel}>Keluar</Text>
+                <Text style={[styles.timeValue, { color: "#FF3B30" }]}>
+                  {formatTime(item.jam_keluar)}
+                </Text>
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.chevronContainer}>
+            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </View>
         </TouchableOpacity>
       );
@@ -279,8 +345,10 @@ export default function HistoryScreen() {
   if (userLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#2E7BE8" />
-        <Text style={styles.loadingText}>Loading user data...</Text>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading user data...</Text>
+        </View>
       </View>
     );
   }
@@ -289,127 +357,203 @@ export default function HistoryScreen() {
   if (userError || historyError) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="alert-circle" size={48} color="#F44336" />
-        <Text style={styles.errorText}>{userError || historyError}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <View style={styles.errorCard}>
+          <View style={styles.errorIconContainer}>
+            <Ionicons name="alert-circle" size={48} color="#FF3B30" />
+          </View>
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorText}>{userError || historyError}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Enhanced Header with Gradient */}
       <View style={styles.header}>
-        <View style={styles.filterCard}>
-          <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
-          <Text style={styles.filterText}>{getMonthYearLabel()}</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.titleSection}>
+            <Text style={styles.headerTitle}>Attendance History</Text>
+            <Text style={styles.headerSubtitle}>Track your attendance records</Text>
+          </View>
+          
+          <View style={styles.filterSection}>
+            <TouchableOpacity style={styles.filterCard} onPress={openFilterModal}>
+              <Ionicons name="calendar-outline" size={18} color="#007AFF" />
+              <Text style={styles.filterText}>{getMonthYearLabel()}</Text>
+              <Ionicons name="chevron-down" size={16} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity style={styles.filterButton} onPress={openFilterModal}>
-          <Ionicons name="options-outline" size={20} color="#2E7BE8" />
-        </TouchableOpacity>
       </View>
 
-      {/* Filter Modal */}
-      <Modal visible={modalVisible} transparent animationType="fade">
+      {/* Enhanced Filter Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter</Text>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter History</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>{t("history.bulan")}</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker selectedValue={tempMonth} onValueChange={setTempMonth} style={styles.picker}>
+                    <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
+                    {months.map((month, index) => (
+                      <Picker.Item key={index} label={month} value={index.toString()} />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
 
-            <Text style={styles.modalSubtitle}>{t("history.bulan")}</Text>
-            <Picker selectedValue={tempMonth} onValueChange={setTempMonth}>
-              <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
-              {months.map((month, index) => (
-                <Picker.Item key={index} label={month} value={index.toString()} />
-              ))}
-            </Picker>
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>{t("history.tahun")}</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker selectedValue={tempYear} onValueChange={setTempYear} style={styles.picker}>
+                    <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
+                    {Array.from({ length: YEAR_RANGE_LENGTH }, (_, i) => {
+                      const year = YEAR_RANGE_START + i;
+                      return <Picker.Item key={year} label={year.toString()} value={year.toString()} />;
+                    })}
+                  </Picker>
+                </View>
+              </View>
 
-            <Text style={styles.modalSubtitle}>{t("history.tahun")}</Text>
-            <Picker selectedValue={tempYear} onValueChange={setTempYear}>
-              <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
-              {Array.from({ length: YEAR_RANGE_LENGTH }, (_, i) => {
-                const year = YEAR_RANGE_START + i;
-                return <Picker.Item key={year} label={year.toString()} value={year.toString()} />;
-              })}
-            </Picker>
-
-            <Text style={styles.modalSubtitle}>{t("history.jenis")}</Text>
-            <Picker selectedValue={tempType} onValueChange={setTempType}>
-              <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
-              <Picker.Item label={t("general.masuk")} value="Hadir" />
-              <Picker.Item label={t("general.pulang")} value="Izin" />
-              <Picker.Item label={t("history.tidakMasuk")} value="Alfa" />
-            </Picker>
-
-            <TouchableOpacity style={styles.modalButton} onPress={applyFilter}>
-              <Text style={styles.modalButtonText}>{t("history.btn")}</Text>
-            </TouchableOpacity>
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>{t("history.jenis")}</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker selectedValue={tempType} onValueChange={setTempType} style={styles.picker}>
+                    <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
+                    <Picker.Item label={t("general.hadir")} value="Hadir" />
+                    <Picker.Item label={t("general.izin")} value="Izin" />
+                    <Picker.Item label={t("general.alfa")} value="Alfa" />
+                  </Picker>
+                </View>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyButton} onPress={applyFilter}>
+                <Text style={styles.applyButtonText}>Apply Filter</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Photo Modal */}
+      {/* Enhanced Photo Modal */}
       <Modal visible={photoModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.photoModalContent]}>
-            <Text style={styles.modalTitle}>Detail Kehadiran</Text>
-
-            <View style={styles.photoButtonsContainer}>
-              {/* Show attendance proof buttons for non-leave statuses */}
-              {!selectedItem?.status_kehadiran?.startsWith("Izin") && (
-                <>
-                  {selectedItem?.bukti_kehadiran && (
-                    <TouchableOpacity onPress={() => setSelectedPhotoType("masuk")} style={styles.photoButton}>
-                      <Text style={styles.photoButtonText}>Bukti Masuk</Text>
-                    </TouchableOpacity>
-                  )}
-                  {selectedItem?.bukti_kehadiran2 && (
-                    <TouchableOpacity onPress={() => setSelectedPhotoType("pulang")} style={styles.photoButton}>
-                      <Text style={styles.photoButtonText}>Bukti Pulang</Text>
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
-
-              {/* Show leave proof for leave statuses */}
-              {selectedItem?.status_kehadiran?.startsWith("Izin") && selectedItem?.bukti_izin && (
-                <TouchableOpacity
-                  onPress={() => setSelectedPhotoType("izin")}
-                  style={[styles.photoButton, styles.leaveButton]}>
-                  <Text style={styles.leaveButtonText}>Bukti Izin</Text>
-                </TouchableOpacity>
-              )}
+          <View style={styles.photoModalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Attendance Details</Text>
+              <TouchableOpacity onPress={() => setPhotoModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
             </View>
 
-            {/* Display selected photo */}
-            {selectedPhotoType === "masuk" && selectedItem?.bukti_kehadiran && (
-              <Image source={{ uri: selectedItem.bukti_kehadiran }} style={styles.photo} resizeMode="contain" />
-            )}
+            <ScrollView style={styles.photoModalContent} showsVerticalScrollIndicator={false}>
+              {selectedItem && (
+                <View style={styles.detailsCard}>
+                  <Text style={styles.detailStatus}>{selectedItem.status_kehadiran}</Text>
+                  <Text style={styles.detailDate}>{selectedItem.tanggal}</Text>
+                </View>
+              )}
 
-            {selectedPhotoType === "pulang" && selectedItem?.bukti_kehadiran2 && (
-              <Image source={{ uri: selectedItem.bukti_kehadiran2 }} style={styles.photo} resizeMode="contain" />
-            )}
+              <View style={styles.photoButtonsGrid}>
+                {/* Show attendance proof buttons for non-leave statuses */}
+                {!selectedItem?.status_kehadiran?.startsWith("Izin") && (
+                  <>
+                    {selectedItem?.bukti_kehadiran && (
+                      <TouchableOpacity 
+                        onPress={() => setSelectedPhotoType("masuk")} 
+                        style={[styles.photoButton, selectedPhotoType === "masuk" && styles.activePhotoButton]}
+                      >
+                        <Ionicons name="log-in-outline" size={20} color={selectedPhotoType === "masuk" ? "#fff" : "#007AFF"} />
+                        <Text style={[styles.photoButtonText, selectedPhotoType === "masuk" && styles.activePhotoButtonText]}>
+                          Check In Photo
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {selectedItem?.bukti_kehadiran2 && (
+                      <TouchableOpacity 
+                        onPress={() => setSelectedPhotoType("pulang")} 
+                        style={[styles.photoButton, selectedPhotoType === "pulang" && styles.activePhotoButton]}
+                      >
+                        <Ionicons name="log-out-outline" size={20} color={selectedPhotoType === "pulang" ? "#fff" : "#007AFF"} />
+                        <Text style={[styles.photoButtonText, selectedPhotoType === "pulang" && styles.activePhotoButtonText]}>
+                          Check Out Photo
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
 
-            {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
-              <Image source={{ uri: selectedItem.bukti_izin }} style={styles.photo} resizeMode="contain" />
-            )}
+                {/* Show leave proof for leave statuses */}
+                {selectedItem?.status_kehadiran?.startsWith("Izin") && selectedItem?.bukti_izin && (
+                  <TouchableOpacity
+                    onPress={() => setSelectedPhotoType("izin")}
+                    style={[styles.photoButton, styles.leavePhotoButton, selectedPhotoType === "izin" && styles.activeLeaveButton]}
+                  >
+                    <Ionicons name="document-text-outline" size={20} color={selectedPhotoType === "izin" ? "#fff" : "#FF9500"} />
+                    <Text style={[styles.leavePhotoButtonText, selectedPhotoType === "izin" && styles.activePhotoButtonText]}>
+                      Leave Document
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
-            <TouchableOpacity style={styles.modalButton} onPress={() => setPhotoModalVisible(false)}>
-              <Text style={styles.modalButtonText}>Tutup</Text>
-            </TouchableOpacity>
+              {/* Display selected photo */}
+              {selectedPhotoType && (
+                <View style={styles.photoContainer}>
+                  {selectedPhotoType === "masuk" && selectedItem?.bukti_kehadiran && (
+                    <Image source={{ uri: selectedItem.bukti_kehadiran }} style={styles.photo} resizeMode="contain" />
+                  )}
+
+                  {selectedPhotoType === "pulang" && selectedItem?.bukti_kehadiran2 && (
+                    <Image source={{ uri: selectedItem.bukti_kehadiran2 }} style={styles.photo} resizeMode="contain" />
+                  )}
+
+                  {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
+                    <Image source={{ uri: selectedItem.bukti_izin }} style={styles.photo} resizeMode="contain" />
+                  )}
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Content */}
+      {/* Enhanced Content */}
       <View style={styles.contentContainer}>
-        <View style={styles.greyLine} />
-        <Text style={styles.title}>{t("history.title")}</Text>
+        <View style={styles.contentHeader}>
+          <View style={styles.greyLine} />
+          <Text style={styles.sectionTitle}>{t("history.title")}</Text>
+          
+          {filteredData.length > 0 && (
+            <View style={styles.statsContainer}>
+              <Text style={styles.statsText}>
+                {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} found
+              </Text>
+            </View>
+          )}
+        </View>
 
         {historyLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2E7BE8" />
+            <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Loading history...</Text>
           </View>
         ) : (
@@ -419,7 +563,15 @@ export default function HistoryScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={<Text style={styles.emptyText}>{t("history.blank")}</Text>}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <Ionicons name="calendar-outline" size={64} color="#C7C7CC" />
+                </View>
+                <Text style={styles.emptyTitle}>No Records Found</Text>
+                <Text style={styles.emptyText}>{t("history.blank")}</Text>
+              </View>
+            }
           />
         )}
       </View>
@@ -430,202 +582,423 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#2E7BE8",
+    backgroundColor: "#F2F2F7",
   },
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    backgroundColor: "#007AFF",
     paddingTop: 60,
+    paddingBottom: 30,
     paddingHorizontal: 20,
-    backgroundColor: "#2E7BE8",
-    paddingBottom: 20,
+  },
+  headerContent: {
+    flexDirection: "column",
+    gap: 20,
+  },
+  titleSection: {
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  filterSection: {
+    alignItems: "center",
   },
   filterCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    elevation: 9,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   filterText: {
-    color: "#2E7BE8",
-    fontWeight: "bold",
-    fontSize: 18,
-    marginLeft: 8,
-  },
-  filterButton: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 30,
-    elevation: 8,
+    color: "#007AFF",
+    fontWeight: "600",
+    fontSize: 16,
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: "#FFF",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingTop: 24,
-    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -15,
+    paddingTop: 20,
   },
-  title: {
+  contentHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  greyLine: {
+    height: 4,
+    width: 40,
+    backgroundColor: "#C7C7CC",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  sectionTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#6B7280",
-    alignSelf: "center",
-    marginVertical: 16,
+    color: "#1C1C1E",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  statsContainer: {
+    alignItems: "center",
+  },
+  statsText: {
+    fontSize: 14,
+    color: "#8E8E93",
+  },
+  loadingCard: {
+    backgroundColor: "#fff",
+    padding: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 60,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
-    color: "#6B7280",
+    color: "#8E8E93",
+    fontWeight: "500",
+  },
+  errorCard: {
+    backgroundColor: "#fff",
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    marginHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  errorIconContainer: {
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1C1C1E",
+    marginBottom: 8,
+    textAlign: "center",
   },
   errorText: {
     fontSize: 16,
-    color: "#F44336",
+    color: "#8E8E93",
     textAlign: "center",
-    marginVertical: 10,
+    marginBottom: 20,
+    lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: "#2E7BE8",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 10,
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   retryButtonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: 16,
   },
   listContent: {
-    paddingBottom: 80,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   itemContainer: {
     flexDirection: "row",
-    alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
-    elevation: 1,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F2F2F7",
   },
-  circleIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
+  statusIndicator: {
+    borderRadius: 12,
+    padding: 8,
     marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  textContainer: {
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contentSection: {
+    flex: 1,
+    gap: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: "bold",
     flex: 1,
   },
-  typeText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#007AFF",
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   dateText: {
-    fontSize: 13,
-    color: "#777",
+    fontSize: 14,
+    color: "#8E8E93",
+    fontWeight: "500",
   },
-  timeText: {
-    fontSize: 15,
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  timeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+  },
+  timeSeparator: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#E5E5EA",
+  },
+  timeLabel: {
+    fontSize: 12,
+    color: "#8E8E93",
+    fontWeight: "500",
+  },
+  timeValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  chevronContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingLeft: 8,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  emptyIconContainer: {
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: "bold",
+    color: "#1C1C1E",
+    marginBottom: 8,
   },
   emptyText: {
+    fontSize: 16,
+    color: "#8E8E93",
     textAlign: "center",
-    color: "#999",
-    marginTop: 50,
+    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
-  modalContent: {
+  modalContainer: {
     backgroundColor: "#fff",
-    marginHorizontal: 30,
-    borderRadius: 12,
-    padding: 20,
-  },
-  photoModalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: "80%",
   },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+  },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
-    alignSelf: "center",
+    color: "#1C1C1E",
   },
-  modalSubtitle: {
-    fontSize: 14,
+  modalContent: {
+    padding: 20,
+  },
+  filterGroup: {
+    marginBottom: 24,
+  },
+  filterLabel: {
+    fontSize: 16,
     fontWeight: "600",
-    color: "#333",
-    marginTop: 10,
-    marginBottom: 4,
+    color: "#1C1C1E",
+    marginBottom: 8,
   },
-  modalButton: {
-    backgroundColor: "#2E7BE8",
-    marginTop: 16,
-    padding: 10,
-    borderRadius: 10,
+  pickerContainer: {
+    backgroundColor: "#F2F2F7",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  picker: {
+    height: 50,
+  },
+  modalActions: {
+    flexDirection: "row",
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F2F2F7",
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#F2F2F7",
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
   },
-  modalButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#8E8E93",
   },
-  photoButtonsContainer: {
+  applyButton: {
+    flex: 1,
+    backgroundColor: "#007AFF",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  photoModalContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "90%",
+  },
+  photoModalContent: {
+    padding: 20,
+  },
+  detailsCard: {
+    backgroundColor: "#F2F2F7",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  detailStatus: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1C1C1E",
+    marginBottom: 4,
+  },
+  detailDate: {
+    fontSize: 14,
+    color: "#8E8E93",
+  },
+  photoButtonsGrid: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 10,
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 20,
   },
   photoButton: {
-    backgroundColor: "#E3F2FD",
+    flex: 1,
+    minWidth: "45%",
+    backgroundColor: "#F2F2F7",
+    paddingVertical: 16,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 12,
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  activePhotoButton: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   photoButtonText: {
-    color: "#2E7BE8",
-    fontWeight: "bold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007AFF",
+    textAlign: "center",
   },
-  leaveButton: {
+  activePhotoButtonText: {
+    color: "#fff",
+  },
+  leavePhotoButton: {
     backgroundColor: "#FFF3E0",
   },
-  leaveButtonText: {
-    color: "#F39C12",
-    fontWeight: "bold",
+  activeLeaveButton: {
+    backgroundColor: "#FF9500",
   },
-  greyLine: {
-    height: 6,
-    width: 80,
-    backgroundColor: "#ccc",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 8,
+  leavePhotoButtonText: {
+    color: "#FF9500",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  photoContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#F2F2F7",
   },
   photo: {
     width: "100%",
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 12,
-    backgroundColor: "#f0f0f0",
+    height: 300,
+    backgroundColor: "#F2F2F7",
   },
 });
