@@ -278,7 +278,7 @@ export default function HistoryScreen() {
             <View style={styles.headerRow}>
               <Text style={[styles.statusText, { color: textColor }]}>{item.status_kehadiran}</Text>
               <View style={[styles.statusBadge, { backgroundColor: lightColor }]}>
-                <Text style={[styles.badgeText, { color: textColor }]}>{baseStatus}</Text>
+                <Text style={[styles.badgeText, { color: textColor }]}>{item.shift_kerja}</Text>
               </View>
             </View>
 

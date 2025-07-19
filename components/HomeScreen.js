@@ -56,7 +56,8 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, [currentDateStr]);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     const fetchAttendanceHistory = async () => {
       try {
         const userDataStr = await AsyncStorage.getItem("userData");
@@ -82,6 +83,7 @@ export default function HomeScreen({ navigation }) {
         } else {
           setTodayAttendance({ jam_masuk: null, jam_keluar: null });
         }
+
         let converted = [];
         hadirData.forEach((item) => {
           if (item.jam_masuk) {
@@ -102,59 +104,54 @@ export default function HomeScreen({ navigation }) {
           }
         });
 
-        // Urutkan dari terbaru ke terlama
         converted = converted.sort((a, b) => {
           const dateTimeA = new Date(`${a.date}T${a.time}`);
           const dateTimeB = new Date(`${b.date}T${b.time}`);
           return dateTimeB - dateTimeA;
         });
+
         setRecentAttendance(converted.slice(0, 3));
 
-       fetch(`${API.PIE_CHART}/${userId}`)
-          .then((res) => res.json())
-          .then((json) => {
-            const getColorByStatus = (label) => {
-              const normalizedLabel = label.toLowerCase();
-              
-              if (normalizedLabel.includes('alfa') || normalizedLabel.includes('alpa')) {
-                return "#F44336"; // Red for Alfa
-              } else if (normalizedLabel.includes('izin')) {
-                return "#FFC107"; // Yellow/Orange for Izin
-              } else if (normalizedLabel.includes('hadir')) {
-                return "#4CAF50"; // Green for Hadir
-              } else if (normalizedLabel.includes('sakit')) {
-                return "#42A5F5" 
-              } else {
-                return "#9E9E9E"; // Gray for others
-              }
-            };
+        // FETCH PIE CHART
+        const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
+        const pieJson = await pieRes.json();
 
-            const pieData = json.labels.map((label, index) => ({
-              name: label,
-              population: json.data[index],
-              color: getColorByStatus(label),
-              legendFontColor: "#333",
-              legendFontSize: 14,
-            }));
-            setChartData(pieData);
-            console.log(pieData);
-          });
+        const getColorByStatus = (label) => {
+          const normalizedLabel = label.toLowerCase();
+          if (normalizedLabel.includes('alfa') || normalizedLabel.includes('alpa')) return "#F44336";
+          if (normalizedLabel.includes('izin')) return "#FFC107";
+          if (normalizedLabel.includes('hadir')) return "#4CAF50";
+          if (normalizedLabel.includes('sakit')) return "#42A5F5";
+          return "#9E9E9E";
+        };
 
-        const responseExistingIzin = await fetch(`${API.EXISTING_IZIN}/${userId}`);
-        const resultExistingIzin = await responseExistingIzin.json();
-        console.log("Existing Izin:", resultExistingIzin.data);
+        const pieData = pieJson.labels.map((label, index) => ({
+          name: label,
+          population: pieJson.data[index],
+          color: getColorByStatus(label),
+          legendFontColor: "#333",
+          legendFontSize: 14,
+        }));
 
-        if (resultExistingIzin?.data) {
-          const existingDates = resultExistingIzin.data.map((item) => item.tanggal);
+        setChartData(pieData);
+        console.log(pieData);
+
+        // Existing Izin
+        const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
+        const izinJson = await izinRes.json();
+        if (izinJson?.data) {
+          const existingDates = izinJson.data.map((item) => item.tanggal);
           setDisabledDates(existingDates);
         }
+
       } catch (err) {
         console.log("Error fetching attendance history:", err);
       }
     };
 
     fetchAttendanceHistory();
-  }, [currentDateStr]);
+  }, [currentDateStr])
+);
 
   useEffect(() => {
     console.log("Events di FormizinPopup:", events);

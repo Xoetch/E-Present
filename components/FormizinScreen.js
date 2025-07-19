@@ -21,7 +21,12 @@ import API from "../utils/ApiConfig";
 
 const { height } = Dimensions.get("window");
 
-export default function FormizinPopup({ visible, onClose, events, disabledDates }) {
+export default function FormizinPopup({
+  visible,
+  onClose,
+  events,
+  disabledDates,
+}) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const [startDate, setStartDate] = useState(tomorrow);
@@ -62,7 +67,9 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
   const isHariLibur = (date) => {
     const ymd = date.toISOString().slice(0, 10);
-    const isEventHoliday = Array.isArray(events) && events.some((event) => event.start?.date === ymd);
+    const isEventHoliday =
+      Array.isArray(events) &&
+      events.some((event) => event.start?.date === ymd);
     const day = date.getDay();
     const isWeekend = day === 0 || day === 6;
     const isDisabled = disabledDates.includes(ymd);
@@ -85,10 +92,10 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
   const handleStartChange = (event, selectedDate) => {
     setShowStartPicker(false);
     if (selectedDate) {
-      if (isHariLibur(selectedDate)) {
-        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
-        return;
-      }
+      // if (isHariLibur(selectedDate)) {
+      //   Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+      //   return;
+      // }
       setStartDate(selectedDate);
       // Jika endDate < startDate, update endDate juga
       if (endDate < selectedDate) setEndDate(selectedDate);
@@ -98,10 +105,10 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
   const handleEndChange = (event, selectedDate) => {
     setShowEndPicker(false);
     if (selectedDate) {
-      if (isHariLibur(selectedDate)) {
-        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
-        return;
-      }
+      // if (isHariLibur(selectedDate)) {
+      //   Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+      //   return;
+      // }
       setEndDate(selectedDate);
     }
   };
@@ -119,6 +126,7 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
   };
 
   const handleJamKhir = (event, time) => {
+    console.log(jenis);
     setShowJamKhir(false);
     if (!time) return;
     const selected = new Date(time);
@@ -147,18 +155,23 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
       Alert.alert("Error", "Semua field wajib diisi dan foto harus diambil");
       return;
     }
+    console.log("Jenis izin yang dipilih:", jenis);
+
     console.log(startDate);
-    if (isHariLibur(startDate) || isHariLibur(endDate)) {
-      Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
-      return;
-    }
+    // if (isHariLibur(startDate) || isHariLibur(endDate)) {
+    //   Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
+    //   return;
+    // }
 
     let id_pengguna = null;
+    let id_shift = null;
     try {
       const userDataString = await AsyncStorage.getItem("userData");
       if (userDataString) {
         const userData = JSON.parse(userDataString);
+        console.log(userData);
         id_pengguna = userData.id_pengguna;
+        id_shift = userData.id_shift;
       }
     } catch (e) {
       Alert.alert("Error", "Gagal mengambil data pengguna");
@@ -166,7 +179,7 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
     }
 
     if (!id_pengguna) {
-      Alert.alert("Error", "ID Pengguna tidak ditemukan");
+      Alert.alert("Error", "Pengguna tidak ditemukan");
       return;
     }
 
@@ -177,27 +190,49 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
       type: "image/jpeg",
     });
 
-    formData.append(
-      "izin",
-      JSON.stringify({
-        tanggal_awal: startDate.toISOString(),
-        tanggal_akhir: endDate.toISOString(),
-        jenis_izin: jenis,
-        id_pengguna: id_pengguna,
-        keterangan: keterangan,
-      })
-    );
+    let endpoint = "";
+    if (jenis === "PART") {
+      endpoint = API.IZIN_SEMENTARA;
+      formData.append(
+        "izin",
+        JSON.stringify({
+          jamMulai: formatTime(jamStart),
+          jamAkhir: formatTime(jamKhir),
+          jenis_izin: jenis,
+          id_pengguna: id_pengguna,
+          keterangan: keterangan,
+          id_shift: id_shift,
+        })
+      );
+    } else if (jenis === "FULL") {
+      endpoint = API.IZIN;
+      formData.append(
+        "izin",
+        JSON.stringify({
+          tanggal_awal: startDate.toISOString().split("T")[0],
+          tanggal_akhir: endDate.toISOString().split("T")[0],
+          jenis_izin: jenis,
+          id_pengguna: id_pengguna,
+          keterangan: keterangan,
+          id_shift: id_shift,
+        })
+      );
+    }
 
     try {
-      const res = await axios.post(API.IZIN, formData, {
+      const res = await axios.post(endpoint, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      Alert.alert("Sukses", res.data.message);
+      Alert.alert(res.data.data, res.data.message);
+      console.log(res.data.message);
+
       handleClose();
     } catch (err) {
-      Alert.alert("Error", "Gagal mengirim data absensi");
+      console.log(res.data.message);
+
+      Alert.alert(res.data.data, res.data.message);
     }
   };
 
@@ -215,23 +250,46 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
           </View>
         </View>
 
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Leave Type Section */}
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>{t("form.jenis.title")}</Text>
             <View style={styles.toggleContainer}>
               <TouchableOpacity
-                style={[styles.toggleButton, jenis === "FULL" && styles.toggleButtonSelected]}
-                onPress={() => setJenis("FULL")}>
-                <Text style={jenis === "FULL" ? styles.toggleTextSelected : styles.toggleText}>
+                style={[
+                  styles.toggleButton,
+                  jenis === "FULL" && styles.toggleButtonSelected,
+                ]}
+                onPress={() => setJenis("FULL")}
+              >
+                <Text
+                  style={
+                    jenis === "FULL"
+                      ? styles.toggleTextSelected
+                      : styles.toggleText
+                  }
+                >
                   {t("form.jenis.full")}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.toggleButton, jenis === "PART" && styles.toggleButtonSelected]}
-                onPress={() => setJenis("PART")}>
-                <Text style={jenis === "PART" ? styles.toggleTextSelected : styles.toggleText}>
+                style={[
+                  styles.toggleButton,
+                  jenis === "PART" && styles.toggleButtonSelected,
+                ]}
+                onPress={() => setJenis("PART")}
+              >
+                <Text
+                  style={
+                    jenis === "PART"
+                      ? styles.toggleTextSelected
+                      : styles.toggleText
+                  }
+                >
                   {t("form.jenis.part")}
                 </Text>
               </TouchableOpacity>
@@ -246,9 +304,18 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
                 <View style={styles.dateRow}>
                   <View style={styles.dateItem}>
                     <Text style={styles.label}>{t("form.tglAwal")}</Text>
-                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowStartPicker(true)}>
-                      <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
-                      <Text style={styles.dateText}>{formatDate(startDate)}</Text>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowStartPicker(true)}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color="#2E7BE8"
+                      />
+                      <Text style={styles.dateText}>
+                        {formatDate(startDate)}
+                      </Text>
                     </TouchableOpacity>
                   </View>
 
@@ -258,8 +325,15 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
                   <View style={styles.dateItem}>
                     <Text style={styles.label}>{t("form.tglAkhir")}</Text>
-                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowEndPicker(true)}>
-                      <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowEndPicker(true)}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color="#2E7BE8"
+                      />
                       <Text style={styles.dateText}>{formatDate(endDate)}</Text>
                     </TouchableOpacity>
                   </View>
@@ -269,10 +343,16 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
               {/* Document Upload Section */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
-                <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
+                <TouchableOpacity
+                  style={styles.imageUploadContainer}
+                  onPress={pickImage}
+                >
                   {image ? (
                     <View style={styles.imagePreviewContainer}>
-                      <Image source={{ uri: image }} style={styles.imagePreview} />
+                      <Image
+                        source={{ uri: image }}
+                        style={styles.imagePreview}
+                      />
                       <View style={styles.imageOverlay}>
                         <Ionicons name="camera" size={24} color="#fff" />
                         <Text style={styles.changeImageText}>Change Photo</Text>
@@ -281,10 +361,16 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
                   ) : (
                     <View style={styles.uploadPlaceholder}>
                       <View style={styles.uploadIconContainer}>
-                        <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                        <Ionicons
+                          name="cloud-upload-outline"
+                          size={32}
+                          color="#2E7BE8"
+                        />
                       </View>
                       <Text style={styles.uploadText}>{t("form.img")}</Text>
-                      <Text style={styles.uploadSubtext}>Tap to select document</Text>
+                      <Text style={styles.uploadSubtext}>
+                        Tap to select document
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -321,9 +407,14 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
                 <View style={styles.dateRow}>
                   <View style={styles.dateItem}>
                     <Text style={styles.label}>{t("form.jamStart")}</Text>
-                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowJamStart(true)}>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowJamStart(true)}
+                    >
                       <Ionicons name="time-outline" size={20} color="#2E7BE8" />
-                      <Text style={styles.dateText}>{formatTime(jamStart)}</Text>
+                      <Text style={styles.dateText}>
+                        {formatTime(jamStart)}
+                      </Text>
                     </TouchableOpacity>
                   </View>
 
@@ -333,7 +424,10 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
                   <View style={styles.dateItem}>
                     <Text style={styles.label}>{t("form.jamKhir")}</Text>
-                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowJamKhir(true)}>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowJamKhir(true)}
+                    >
                       <Ionicons name="time-outline" size={20} color="#2E7BE8" />
                       <Text style={styles.dateText}>{formatTime(jamKhir)}</Text>
                     </TouchableOpacity>
@@ -344,10 +438,16 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
               {/* Document Upload Section */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
-                <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
+                <TouchableOpacity
+                  style={styles.imageUploadContainer}
+                  onPress={pickImage}
+                >
                   {image ? (
                     <View style={styles.imagePreviewContainer}>
-                      <Image source={{ uri: image }} style={styles.imagePreview} />
+                      <Image
+                        source={{ uri: image }}
+                        style={styles.imagePreview}
+                      />
                       <View style={styles.imageOverlay}>
                         <Ionicons name="camera" size={24} color="#fff" />
                         <Text style={styles.changeImageText}>Change Photo</Text>
@@ -356,10 +456,16 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
                   ) : (
                     <View style={styles.uploadPlaceholder}>
                       <View style={styles.uploadIconContainer}>
-                        <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                        <Ionicons
+                          name="cloud-upload-outline"
+                          size={32}
+                          color="#2E7BE8"
+                        />
                       </View>
                       <Text style={styles.uploadText}>{t("form.img")}</Text>
-                      <Text style={styles.uploadSubtext}>Tap to select document</Text>
+                      <Text style={styles.uploadSubtext}>
+                        Tap to select document
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -411,15 +517,32 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
         )}
 
         {showEndPicker && (
-          <DateTimePicker value={endDate} mode="date" onChange={handleEndChange} minimumDate={startDate} />
+          <DateTimePicker
+            value={endDate}
+            mode="date"
+            onChange={handleEndChange}
+            minimumDate={startDate}
+          />
         )}
 
         {showJamStart && (
-          <DateTimePicker value={jamStart} mode="time" is24Hour={false} onChange={handleJamStart} design="material" />
+          <DateTimePicker
+            value={jamStart}
+            mode="time"
+            is24Hour={false}
+            onChange={handleJamStart}
+            design="material"
+          />
         )}
 
         {showJamKhir && (
-          <DateTimePicker value={jamKhir} mode="time" is24Hour={false} onChange={handleJamKhir} design="material" />
+          <DateTimePicker
+            value={jamKhir}
+            mode="time"
+            is24Hour={false}
+            onChange={handleJamKhir}
+            design="material"
+          />
         )}
       </View>
     </Modal>

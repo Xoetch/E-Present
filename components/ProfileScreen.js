@@ -194,7 +194,7 @@ export default function ProfileScreen({ onLogout }) {
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
+          <Text style={styles.cardTitle}>{t("profile.info")}</Text>
           <View style={styles.cardTitleUnderline} />
         </View>
         <View style={styles.infoRow}>
