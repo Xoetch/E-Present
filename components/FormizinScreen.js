@@ -3,9 +3,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Modal from "react-native-modal";
 import API from "../utils/ApiConfig";
 
@@ -16,8 +26,12 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
   tomorrow.setDate(tomorrow.getDate() + 1);
   const [startDate, setStartDate] = useState(tomorrow);
   const [endDate, setEndDate] = useState(tomorrow);
+  const [jamStart, setJamStart] = useState(new Date());
+  const [jamKhir, setJamKhir] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [showJamStart, setShowJamStart] = useState(false);
+  const [showJamKhir, setShowJamKhir] = useState(false);
   const [jenis, setJenis] = useState(null);
   const [keterangan, setKeterangan] = useState("");
   const [open, setOpen] = useState(false);
@@ -25,15 +39,6 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
   const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
-
-  useEffect(() => {
-    setItems([
-      { label: t("form.jenis.sakit"), value: "sakit" },
-      { label: t("form.jenis.izin"), value: "izin" },
-      { label: t("form.jenis.cuti"), value: "cuti" },
-      { label: t("form.jenis.sebagian"), value: "sebagian" },
-    ]);
-  }, [t, i18n.language]);
 
   const resetForm = () => {
     setStartDate(tomorrow);
@@ -44,6 +49,10 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
     setOpen(false);
     setImage(null);
     setKeterangan("");
+    setJamStart(new Date());
+    setJamKhir(new Date());
+    setShowJamStart(false);
+    setShowJamKhir(false);
   };
 
   const handleClose = () => {
@@ -97,12 +106,41 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
     }
   };
 
+  const handleJamStart = (event, time) => {
+    setShowJamStart(false);
+    if (!time) return;
+    const selected = new Date(time);
+    const now = new Date();
+    selected.setSeconds(0);
+    if (selected.getTime() < now.getTime()) {
+      Alert.alert("Tidak bisa memilih waktu kurang dari jam sekarang!");
+    }
+    setJamStart(selected);
+  };
+
+  const handleJamKhir = (event, time) => {
+    setShowJamKhir(false);
+    if (!time) return;
+    const selected = new Date(time);
+    selected.setSeconds(0);
+    if (selected.getTime() < jamStart.getTime()) {
+      Alert.alert("Jam berakhir tidak boleh kurang dari jam mulai!");
+      return;
+    }
+    // TODO implementasi jamKhir tidak boleh dari jam shift dibawah sini
+    setJamKhir(selected);
+  };
+
   const formatDate = (date) =>
     date.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+      dateStyle: "medium",
     });
+
+  const formatTime = (date) => {
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
 
   const submitIzin = async () => {
     if (!startDate || !endDate || !jenis || !image) {
@@ -204,6 +242,7 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
             <>
               {/* Date Selection Section */}
               <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.tgl")}</Text>
                 <View style={styles.dateRow}>
                   <View style={styles.dateItem}>
                     <Text style={styles.label}>{t("form.tglAwal")}</Text>
@@ -231,12 +270,23 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
                 <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
-                  <View style={styles.uploadPlaceholder}>
-                    <View style={styles.uploadIconContainer}>
-                      <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                  {image ? (
+                    <View style={styles.imagePreviewContainer}>
+                      <Image source={{ uri: image }} style={styles.imagePreview} />
+                      <View style={styles.imageOverlay}>
+                        <Ionicons name="camera" size={24} color="#fff" />
+                        <Text style={styles.changeImageText}>Change Photo</Text>
+                      </View>
                     </View>
-                    <Text style={styles.uploadSubtext}>{t("form.img")}</Text>
-                  </View>
+                  ) : (
+                    <View style={styles.uploadPlaceholder}>
+                      <View style={styles.uploadIconContainer}>
+                        <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                      </View>
+                      <Text style={styles.uploadText}>{t("form.img")}</Text>
+                      <Text style={styles.uploadSubtext}>Tap to select document</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -257,7 +307,77 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
             </>
           ) : jenis === "PART" ? (
             <>
-              <Text>{t("form.jenis.part")}</Text>
+              {/* Info Tanggal Izin */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.tgl")}</Text>
+                <View style={styles.dateInput}>
+                  <Ionicons name="calendar-outline" size={20} color="#2E7BE8" />
+                  <Text style={styles.dateText}>{formatDate(new Date())}</Text>
+                </View>
+              </View>
+
+              {/* Time Selection Section */}
+              <View style={styles.formSection}>
+                <View style={styles.dateRow}>
+                  <View style={styles.dateItem}>
+                    <Text style={styles.label}>{t("form.jamStart")}</Text>
+                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowJamStart(true)}>
+                      <Ionicons name="time-outline" size={20} color="#2E7BE8" />
+                      <Text style={styles.dateText}>{formatTime(jamStart)}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.dateSeparator}>
+                    <Ionicons name="arrow-forward" size={20} color="#8E8E93" />
+                  </View>
+
+                  <View style={styles.dateItem}>
+                    <Text style={styles.label}>{t("form.jamKhir")}</Text>
+                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowJamKhir(true)}>
+                      <Ionicons name="time-outline" size={20} color="#2E7BE8" />
+                      <Text style={styles.dateText}>{formatTime(jamKhir)}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* Document Upload Section */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
+                <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
+                  {image ? (
+                    <View style={styles.imagePreviewContainer}>
+                      <Image source={{ uri: image }} style={styles.imagePreview} />
+                      <View style={styles.imageOverlay}>
+                        <Ionicons name="camera" size={24} color="#fff" />
+                        <Text style={styles.changeImageText}>Change Photo</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadPlaceholder}>
+                      <View style={styles.uploadIconContainer}>
+                        <Ionicons name="cloud-upload-outline" size={32} color="#2E7BE8" />
+                      </View>
+                      <Text style={styles.uploadText}>{t("form.img")}</Text>
+                      <Text style={styles.uploadSubtext}>Tap to select document</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {/* Description Section */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionTitle}>{t("form.keterangan")}</Text>
+                <TextInput
+                  style={styles.descriptionInput}
+                  placeholder={t("form.placeholderKet")}
+                  placeholderTextColor="#8E8E93"
+                  value={keterangan}
+                  onChangeText={setKeterangan}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
             </>
           ) : (
             <View style={styles.warningContainer}>
@@ -291,20 +411,22 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
         )}
 
         {showEndPicker && (
-          <DateTimePicker
-            value={endDate}
-            mode="date"
-            display="default"
-            onChange={handleEndChange}
-            minimumDate={startDate}
-          />
+          <DateTimePicker value={endDate} mode="date" onChange={handleEndChange} minimumDate={startDate} />
+        )}
+
+        {showJamStart && (
+          <DateTimePicker value={jamStart} mode="time" is24Hour={false} onChange={handleJamStart} design="material" />
+        )}
+
+        {showJamKhir && (
+          <DateTimePicker value={jamKhir} mode="time" is24Hour={false} onChange={handleJamKhir} design="material" />
         )}
       </View>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   modal: {
     justifyContent: "flex-end",
     margin: 0,

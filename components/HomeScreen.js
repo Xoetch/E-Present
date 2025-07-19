@@ -108,7 +108,7 @@ export default function HomeScreen({ navigation }) {
           const dateTimeB = new Date(`${b.date}T${b.time}`);
           return dateTimeB - dateTimeA;
         });
-        setRecentAttendance(converted.slice(0, 3)); // tampilkan 3 terakhir
+        setRecentAttendance(converted.slice(0, 3));
 
        fetch(`${API.PIE_CHART}/${userId}`)
           .then((res) => res.json())
@@ -216,9 +216,7 @@ export default function HomeScreen({ navigation }) {
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes().toString().padStart(2, "0");
-      const suffix = hours >= 12 ? "PM" : "AM";
-      const formattedHours = (hours % 12 || 12).toString().padStart(2, "0");
-      setCurrentTime(`${formattedHours}:${minutes} ${suffix}`);
+      setCurrentTime(`${hours}:${minutes}`);
       setLoadingTime(false);
     }, 1000);
 
@@ -233,15 +231,6 @@ export default function HomeScreen({ navigation }) {
     }).start(() => {
       navigation.navigate(screenName);
     });
-  };
-
-  const formatToAMPM = (time24) => {
-    if (!time24) return "-";
-    const [hourStr, minute] = time24.split(":");
-    const hour = parseInt(hourStr);
-    const suffix = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12.toString().padStart(2, "0")}:${minute} ${suffix}`;
   };
 
   return (
@@ -268,7 +257,7 @@ export default function HomeScreen({ navigation }) {
 
         <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
           <View style={styles.greyLine} />
-          
+
           {/* Time Section */}
           <View style={styles.timeSection}>
             <WithLoader loading={loadingTime}>
@@ -279,8 +268,9 @@ export default function HomeScreen({ navigation }) {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
-                day: "numeric"
-              })}</Text>
+                day: "numeric",
+              })}
+            </Text>
           </View>
 
           {/* Action Buttons Section */}
@@ -315,20 +305,18 @@ export default function HomeScreen({ navigation }) {
                   <Ionicons name="log-in-outline" size={20} color="#4CAF50" />
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
-                <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_masuk ? formatToAMPM(todayAttendance.jam_masuk) : "-"}
-                </Text>
+                <Text style={styles.attendanceTime}>{todayAttendance.jam_masuk ? todayAttendance.jam_masuk : "-"}</Text>
               </View>
-              
+
               <View style={styles.attendanceDivider} />
-              
+
               <View style={styles.attendanceItem}>
                 <View style={styles.attendanceIconContainer}>
                   <Ionicons name="log-out-outline" size={20} color="#F44336" />
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_keluar ? formatToAMPM(todayAttendance.jam_keluar) : "-"}
+                  {todayAttendance.jam_keluar ? todayAttendance.jam_keluar : "-"}
                 </Text>
               </View>
             </View>
@@ -337,7 +325,13 @@ export default function HomeScreen({ navigation }) {
           {/* Statistics Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
+              <View style={styles.rowBetween}>
+                <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
+                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
+                  <Text style={styles.link}>{t("home.lihat")}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
+                </TouchableOpacity>
+              </View>
               <View style={styles.cardTitleUnderline} />
             </View>
             <View style={styles.chartContainer}>
@@ -356,50 +350,6 @@ export default function HomeScreen({ navigation }) {
                 paddingLeft={"15"}
                 absolute
               />
-            </View>
-          </View>
-
-          {/* Recent History Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.cardTitle}>{t("home.history")}</Text>
-                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
-                  <Text style={styles.link}>{t("home.lihat")}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.cardTitleUnderline} />
-            </View>
-
-            <View style={styles.historyList}>
-              {recentAttendance.map((item) => (
-                <View key={item.id} style={styles.historyItem}>
-                  <View style={[
-                    styles.historyIconContainer,
-                    item.type === "Masuk Kerja" ? styles.checkInIcon : styles.checkOutIcon
-                  ]}>
-                    <Ionicons name="time-outline" size={20} color="#fff" />
-                  </View>
-
-                  <View style={styles.historyContent}>
-                    <Text style={[
-                      styles.historyType,
-                      { color: item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336" }
-                    ]}>
-                      {item.type}
-                    </Text>
-                    <Text style={styles.historyDate}>{item.date}</Text>
-                  </View>
-
-                  <Text style={[
-                    styles.historyTime,
-                    { color: item.type === "Masuk Kerja" ? "#4CAF50" : "#F44336" }
-                  ]}>
-                    {formatToAMPM(item.time)}
-                  </Text>
-                </View>
-              ))}
             </View>
           </View>
 
@@ -426,7 +376,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: "#2E7BE8",

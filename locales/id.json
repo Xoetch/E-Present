@@ -38,17 +38,18 @@
   "profile": {
     "name": "Profil Pekerja",
     "address": "Alamat",
-    "shift": "Shift Kerja",
+    "shift": "Waktu Shift",
     "Localization": "Pengaturan Bahasa",
     "eng": "Bahasa Inggris",
     "ind": "Bahasa Indonesia",
     "logout": "Keluar",
-    "Konfirmasi": "Anda yakin ingin keluar?"
+    "Konfirmasi": "Anda yakin ingin keluar?",
+    "info": "Informasi Pengguna"
   },
   "history": {
     "title": "Riwayat Absensi",
     "subtitle":"Berikut data riwayat absensi anda",
-    "blank": "Tidak ada rekap absensi di bulan ini.",
+    "blank": "Tidak ada data yang ditemukan.",
     "bulan": "Bulan",
     "tahun": "Tahun",
     "jenis": "Jenis Absensi",
@@ -68,8 +69,11 @@
   },
   "form": {
     "title": "Form Pengajuan Izin",
+    "tgl": "Tanggal Izin",
     "tglAwal": "Tanggal Awal",
     "tglAkhir": "Tanggal Akhir",
+    "jamStart": "Jam Awal",
+    "jamKhir": "Jam Akhir",
     "bukti": "Bukti Izin",
     "img": "Klik Untuk Unggah Gambar",
     "btnConfirm": "Ajukan Izin",
@@ -81,7 +85,7 @@
       "default": "Pilih Salah Satu Jenis Izin!"
     },
     "keterangan": "Keterangan Izin",
-    "placeholderKet": "Tuliskan keterangan izin di sini.\n\nContoh: Sakit / Cuti Acara Keluarga."
+    "placeholderKet": "Contoh: Sakit / Cuti Acara Keluarga."
   },
   "result": {
     "error": "GAGAL!",

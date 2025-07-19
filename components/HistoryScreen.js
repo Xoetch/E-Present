@@ -13,11 +13,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import API from "../utils/ApiConfig";
-
 const { width } = Dimensions.get("window");
 
 // Constants - moved outside component to prevent recreation
@@ -34,28 +34,16 @@ const STATUS_CONFIG = {
     textColor: "#2E7D32",
   },
   Izin: {
-    icon: "alert-circle",
+    icon: "briefcase",
     colors: ["#FFC107", "#FFD54F"],
     lightColor: "#FFF8E1",
     textColor: "#F57F17",
   },
-  Sakit: {
-    icon: "medkit",
-    colors: ["#03A9F4", "#42A5F5"],
-    lightColor: "#E3F2FD",
-    textColor: "#1565C0",
-  },
-  Alfa: {
+  Alpa: {
     icon: "close-circle",
     colors: ["#F44336", "#EF5350"],
     lightColor: "#FFEBEE",
     textColor: "#C62828",
-  },
-  Cuti: {
-    icon: "briefcase",
-    colors: ["#9C27B0", "#BA68C8"],
-    lightColor: "#F3E5F5",
-    textColor: "#7B1FA2",
   },
   Lainnya: {
     icon: "help-circle",
@@ -138,39 +126,18 @@ const useHistoryData = (userId) => {
 // Utility functions
 const formatTime = (timeStr) => {
   if (!timeStr) return "-";
-
   // Already in correct format
   if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
-
   // Remove seconds
   if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0, 5);
-
-  // Handle AM/PM format
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
-  if (match) {
-    let hour = parseInt(match[1], 10);
-    const minute = match[2];
-    const ampm = match[3];
-
-    if (ampm) {
-      if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
-      if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
-    }
-
-    return `${hour.toString().padStart(2, "0")}:${minute}`;
-  }
-
   return timeStr;
 };
 
 const getBaseStatus = (status) => {
   if (!status) return "Lainnya";
-
   if (status.startsWith("Izin")) return "Izin";
   if (status === "Hadir") return "Hadir";
-  if (status === "Sakit") return "Sakit";
-  if (status === "Alfa") return "Alfa";
-  if (status === "Cuti") return "Cuti";
+  if (status === "Alpa") return "Alpa";
 
   return "Lainnya";
 };
@@ -440,7 +407,7 @@ export default function HistoryScreen() {
                     <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
                     <Picker.Item label={t("general.hadir")} value="Hadir" />
                     <Picker.Item label={t("general.izin")} value="Izin" />
-                    <Picker.Item label={t("general.alfa")} value="Alfa" />
+                    <Picker.Item label={t("general.alfa")} value="Alpa" />
                   </Picker>
                 </View>
               </View>
@@ -539,7 +506,7 @@ export default function HistoryScreen() {
                         styles.leavePhotoButtonText,
                         selectedPhotoType === "izin" && styles.activePhotoButtonText,
                       ]}>
-                      Leave Document
+                      {t("form.bukti")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -557,7 +524,13 @@ export default function HistoryScreen() {
                   )}
 
                   {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
-                    <Image source={{ uri: selectedItem.bukti_izin }} style={styles.photo} resizeMode="contain" />
+                    <>
+                      <Image source={{ uri: selectedItem.bukti_izin }} style={styles.photo} resizeMode="contain" />
+                      {/* <View style={styles.detailsCard}>
+                        <Text style={styles.detailStatus}>{t}</Text>
+                        <Text style={styles.detailDate}>{selectedItem.tanggal}</Text>
+                      </View> */}
+                    </>
                   )}
                 </View>
               )}
@@ -595,7 +568,7 @@ export default function HistoryScreen() {
                 <View style={styles.emptyIconContainer}>
                   <Ionicons name="calendar-outline" size={64} color="#C7C7CC" />
                 </View>
-                <Text style={styles.emptyTitle}>No Records Found</Text>
+                {/* <Text style={styles.emptyTitle}>{t("history.blank")}</Text> */}
                 <Text style={styles.emptyText}>{t("history.blank")}</Text>
               </View>
             }

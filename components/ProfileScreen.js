@@ -5,7 +5,7 @@ import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import API from "../utils/ApiConfig";
 
 export default function ProfileScreen({ onLogout }) {
@@ -83,7 +83,7 @@ export default function ProfileScreen({ onLogout }) {
     }
   };
 
- const handleLogout = async () => {
+  const handleLogout = async () => {
     Alert.alert(t("profile.Konfirmasi"), null, [
       {
         text: t("general.no"),
@@ -109,12 +109,12 @@ export default function ProfileScreen({ onLogout }) {
   const constructImageUrl = (imagePath) => {
     if (!imagePath) return "";
     // If it's already a full URL, extract just the path part
-    if (imagePath.includes('http')) {
+    if (imagePath.includes("http")) {
       const url = new URL(imagePath);
       return `${API.BASE_URL}${url.pathname}`;
     }
     // If it's just a path, construct the full URL
-    if (imagePath.startsWith('/')) {
+    if (imagePath.startsWith("/")) {
       return `${API.BASE_URL}${imagePath}`;
     }
     // If it's just a filename, assume it's in uploads folder
@@ -154,15 +154,15 @@ export default function ProfileScreen({ onLogout }) {
       });
       if (res.data && res.data.data) {
         const updatedData = res.data.data;
-        
+
         // Fix the image URL to use correct base URL
         const correctedImageUrl = constructImageUrl(updatedData.foto_pengguna);
-        
+
         const newUserData = {
           ...userData,
           foto_pengguna: correctedImageUrl,
         };
-        
+
         await AsyncStorage.setItem("userData", JSON.stringify(newUserData));
         setUserData(newUserData);
         setImage(correctedImageUrl);
@@ -178,7 +178,7 @@ export default function ProfileScreen({ onLogout }) {
   };
 
   return (
-    <View style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header} />
 
       <View style={styles.profileWrapper}>
@@ -192,7 +192,11 @@ export default function ProfileScreen({ onLogout }) {
 
       <Text style={styles.nameText}>{userData.nama_lengkap}</Text>
 
-      <View style={styles.infoCard}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
+          <View style={styles.cardTitleUnderline} />
+        </View>
         <View style={styles.infoRow}>
           <Ionicons name="business" size={20} color="#888" style={styles.icon} />
           <View>
@@ -204,15 +208,15 @@ export default function ProfileScreen({ onLogout }) {
           <Ionicons name="time" size={20} color="#888" style={styles.icon} />
           <View>
             <Text style={styles.label}>{t("profile.shift")}</Text>
-            <Text style={styles.value}>{userData.jam_shift || "Pagi (08:00 - 16:00)"}</Text>
+            <Text style={styles.value}>{userData.jam_shift || "09:00 - 17:00"}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.languageCard}>
-        <View style={styles.languageHeader}>
-          <Ionicons name="globe-outline" size={20} color="#888" style={styles.icon} />
-          <Text style={styles.languageTitle}>{t("profile.Localization")}</Text>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{t("profile.Localization")}</Text>
+          <View style={styles.cardTitleUnderline} />
         </View>
         <View style={styles.languageButtons}>
           <TouchableOpacity
@@ -244,7 +248,7 @@ export default function ProfileScreen({ onLogout }) {
         <Ionicons name="log-out-outline" size={20} color="red" style={styles.icon} />
         <Text style={styles.logoutText}>{t("profile.logout")}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -252,7 +256,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: {
     backgroundColor: "#2E7BE8",
-    height: 175,
+    height: 125,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
@@ -284,40 +288,41 @@ const styles = StyleSheet.create({
     color: "#2E7BE8",
     marginVertical: 16,
   },
-  infoCard: {
+  card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 20,
     marginHorizontal: 16,
-    padding: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  cardHeader: {
     marginBottom: 16,
-    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+    marginBottom: 8,
+  },
+  cardTitleUnderline: {
+    height: 3,
+    width: 30,
+    backgroundColor: "#2E7BE8",
+    borderRadius: 2,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   icon: { marginRight: 12 },
   label: { fontSize: 13, color: "#777" },
   value: { fontSize: 16, fontWeight: "bold", color: "#444" },
-  languageCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginHorizontal: 16,
-    padding: 16,
-    elevation: 2,
-    marginBottom: 16,
-  },
-  languageHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  languageTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#444",
-  },
   languageButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -342,13 +347,18 @@ const styles = StyleSheet.create({
   languageText: { fontWeight: "bold", color: "#888" },
   languageTextSelected: { color: "#fff" },
   logoutButton: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    paddingVertical: 12,
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 20,
+    marginHorizontal: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    paddingVertical: 12,
     alignItems: "center",
-    elevation: 2,
     flexDirection: "row",
     justifyContent: "center",
   },
