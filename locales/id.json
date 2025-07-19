@@ -1,0 +1,96 @@
+{
+  "general": {
+    "loading": "Memuat...",
+    "masuk": "Masuk",
+    "pulang": "Pulang",
+    "absen": "Absen",
+    "izin": "Izin",
+    "sakit": "Sakit",
+    "cuti": "Cuti",
+    "alfa": "Alfa",
+    "welcome": "Selamat Datang di E-Present!",
+    "semua": "Semua",
+    "yes": "Ya",
+    "no": "Tidak"
+  },
+  "home": {
+    "statistik": "Kehadiran sebulan terakhir",
+    "history": "Riwayat Kehadiran",
+    "lihat": "Lihat Selengkapnya",
+    "calendar": "Kalender"
+  },
+  "bar": {
+    "home": "Beranda",
+    "history": "Riwayat",
+    "profile": "Profil"
+  },
+  "login": {
+    "username": "Nama Pengguna",
+    "password": "Kata Sandi",
+    "login": "Masuk",
+    "forgor": "Lupa Kata Sandi?"
+  },
+  "profile": {
+    "name": "Profil Pekerja",
+    "address": "Alamat",
+    "shift": "Shift Kerja",
+    "Localization": "Pengaturan Bahasa",
+    "eng": "Bahasa Inggris",
+    "ind": "Bahasa Indonesia",
+    "logout": "Keluar",
+    "Konfirmasi": "Anda yakin ingin keluar?"
+  },
+  "history": {
+    "title": "Riwayat Absensi",
+    "blank": "Tidak ada rekap absensi di bulan ini.",
+    "bulan": "Bulan",
+    "tahun": "Tahun",
+    "jenis": "Jenis Absensi",
+    "btn": "Terapkan",
+    "tidakMasuk": "Tidak Masuk",
+    "semuaWaktu": "Semua Waktu"
+  },
+  "notif": {},
+  "camera": {
+    "warn": "Perhatian!",
+    "desc1": "Pastikan kamera anda aktif dan menghadap ke wajah anda.",
+    "desc2": "Pastikan GPS anda aktif dan berada di lokasi bekerja"
+  },
+  "form": {
+    "title": "Pengajuan Izin",
+    "tglAwal": "Tanggal Awal",
+    "tglAkhir": "Tanggal Akhir",
+    "bukti": "Bukti Izin",
+    "img": "Klik Untuk Unggah Gambar",
+    "btnConfirm": "Ajukan Izin",
+    "btnClose": "Tutup",
+    "jenis": {
+      "title": "Jenis Izin",
+      "izin": "Izin",
+      "sakit": "Sakit",
+      "cuti": "Cuti",
+      "default": "Pilih Jenis Izin"
+    }
+  },
+  "result": {
+    "error": "GAGAL!",
+    "success": "BERHASIL!",
+    "desc1": "anda dapat menutup halaman ini.",
+    "desc2": "tunggu sebentar, sistem sedang memproses permintaan anda...",
+    "desc3": "Uh Oh... Sepertinya terjadi kesalahan, Silahkan coba lagi nanti atau panggil admin."
+  },
+  "months": {
+    "january": "Januari",
+    "february": "Februari",
+    "march": "Maret",
+    "april": "April",
+    "may": "Mei",
+    "june": "Juni",
+    "july": "Juli",
+    "august": "Agustus",
+    "september": "September",
+    "october": "Oktober",
+    "november": "November",
+    "december": "Desember"
+  }
+}

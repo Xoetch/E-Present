@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,26 +6,68 @@ import {
   StyleSheet,
   Image,
   Platform,
-  Button,
+  TextInput,
+  Alert
 } from "react-native";
 import Modal from "react-native-modal";
 import * as ImagePicker from "expo-image-picker";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTranslation } from "react-i18next";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import API from "../utils/ApiConfig";
 
-export default function FormizinPopup({ visible, onClose }) {
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+export default function FormizinPopup({ visible, onClose, events, disabledDates }) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const [startDate, setStartDate] = useState(tomorrow);
+  const [endDate, setEndDate] = useState(tomorrow);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [jenis, setJenis] = useState(null);
+  const [keterangan, setKeterangan] = useState("");
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
-    { label: "Sakit", value: "sakit" },
-    { label: "Izin", value: "izin" },
-    { label: "Cuti", value: "cuti" },
-  ]);
+  const { t, i18n } = useTranslation();
+
+  const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
+
+
+  useEffect(() => {
+    setItems([
+      { label: t("form.jenis.sakit"), value: "sakit" },
+      { label: t("form.jenis.izin"), value: "izin" },
+      { label: t("form.jenis.cuti"), value: "cuti" },
+    ]);
+  }, [t, i18n.language]);
+
+  
+
+  const resetForm = () => {
+    setStartDate(tomorrow);
+    setEndDate(tomorrow);
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+    setJenis(null);
+    setOpen(false);
+    setImage(null);
+    setKeterangan("");
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const isHariLibur = (date) => {
+    const ymd = date.toISOString().slice(0, 10);
+    const isEventHoliday = Array.isArray(events) && events.some(event => event.start?.date === ymd);
+    const day = date.getDay();
+    const isWeekend = day === 0 || day === 6;
+    const isDisabled = disabledDates.includes(ymd);
+    return isEventHoliday || isWeekend || isDisabled;
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -42,12 +84,26 @@ export default function FormizinPopup({ visible, onClose }) {
 
   const handleStartChange = (event, selectedDate) => {
     setShowStartPicker(false);
-    if (selectedDate) setStartDate(selectedDate);
+    if (selectedDate) {
+      if (isHariLibur(selectedDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+        return;
+      }
+      setStartDate(selectedDate);
+      // Jika endDate < startDate, update endDate juga
+      if (endDate < selectedDate) setEndDate(selectedDate);
+    }
   };
 
   const handleEndChange = (event, selectedDate) => {
     setShowEndPicker(false);
-    if (selectedDate) setEndDate(selectedDate);
+    if (selectedDate) {
+      if (isHariLibur(selectedDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+        return;
+      }
+      setEndDate(selectedDate);
+    }
   };
 
   const formatDate = (date) =>
@@ -56,6 +112,63 @@ export default function FormizinPopup({ visible, onClose }) {
       month: "2-digit",
       year: "numeric",
     });
+  
+
+    const submitIzin = async () => {
+      if (!startDate || !endDate || !jenis || !image) {
+      Alert.alert('Error', 'Semua field wajib diisi dan foto harus diambil');
+        return;
+      }
+      console.log(startDate)
+      if (isHariLibur(startDate) || isHariLibur(endDate)) {
+        Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
+        return;
+      }
+  
+      let id_pengguna = null;
+      try {
+        const userDataString = await AsyncStorage.getItem('userData');
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          id_pengguna = userData.id_pengguna;
+        }
+      } catch (e) {
+        Alert.alert('Error', 'Gagal mengambil data pengguna');
+        return;
+      }
+
+      if (!id_pengguna) {
+        Alert.alert('Error', 'ID Pengguna tidak ditemukan');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: image,
+        name: 'bukti_izin.jpg',
+        type: 'image/jpeg',
+      });
+
+      formData.append('izin', JSON.stringify({
+        tanggal_awal: startDate.toISOString(),
+        tanggal_akhir: endDate.toISOString(),
+        jenis_izin: jenis,
+        id_pengguna: id_pengguna,
+        keterangan: keterangan
+      }));
+
+      try {
+        const res = await axios.post(API.IZIN, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        Alert.alert('Sukses', res.data.message);
+      } catch (err) {
+        Alert.alert('Error', 'Gagal mengirim data absensi');
+      }
+      resetForm();
+    };
 
   return (
     <Modal
@@ -67,9 +180,9 @@ export default function FormizinPopup({ visible, onClose }) {
     >
       <View style={styles.container}>
         <View style={styles.topBar} />
-        <Text style={styles.title}>Pengajuan Izin</Text>
+        <Text style={styles.title}>{t("form.title")}</Text>
 
-        <Text style={styles.label}>Tanggal Awal</Text>
+        <Text style={styles.label}>{t("form.tglAwal")}</Text>
         <TouchableOpacity
           style={styles.input}
           onPress={() => setShowStartPicker(true)}
@@ -82,10 +195,12 @@ export default function FormizinPopup({ visible, onClose }) {
             mode="date"
             display="default"
             onChange={handleStartChange}
+            minimumDate={tomorrow}
+            maximumDate={endDate}
           />
         )}
 
-        <Text style={styles.label}>Tanggal Akhir</Text>
+        <Text style={styles.label}>{t("form.tglAkhir")}</Text>
         <TouchableOpacity
           style={styles.input}
           onPress={() => setShowEndPicker(true)}
@@ -98,10 +213,12 @@ export default function FormizinPopup({ visible, onClose }) {
             mode="date"
             display="default"
             onChange={handleEndChange}
+            minimumDate={startDate}
+            
           />
         )}
 
-        <Text style={styles.label}>Jenis Izin</Text>
+        <Text style={styles.label}>{t("form.jenis.title")}</Text>
         <DropDownPicker
           open={open}
           value={jenis}
@@ -111,26 +228,40 @@ export default function FormizinPopup({ visible, onClose }) {
           setItems={setItems}
           style={styles.dropdown}
           dropDownContainerStyle={styles.dropdownContainer}
+          placeholder={t("form.jenis.default")}
         />
 
-        <Text style={styles.label}>Bukti Foto</Text>
+        <Text style={styles.label}>{t("form.bukti")}</Text>
         <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
           {image ? (
             <Image source={{ uri: image }} style={styles.image} />
           ) : (
-            <Text style={{ color: "#fff" }}>Pilih Gambar</Text>
+            <Text style={{ color: "#fff" }}>{t("form.img")}</Text>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.submitText}>Ajukan</Text>
+        <Text style={styles.label}>Keterangan</Text>
+        <TextInput
+          style={styles.keteranganInput}
+          placeholder="Masukkan keterangan tambahan"
+          value={keterangan}
+          onChangeText={setKeterangan}
+          multiline
+          numberOfLines={4}
+        />
+
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={submitIzin}
+        >
+          <Text style={styles.submitText}>{t("form.btnConfirm")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onClose}
+          onPress={handleClose}
           style={{ marginTop: 12, alignSelf: "center" }}
         >
-          <Text style={{ color: "#2E7BE8" }}>Tutup</Text>
+          <Text style={{ color: "#2E7BE8" }}>{t("form.btnClose")}</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -211,5 +342,16 @@ const styles = StyleSheet.create({
   submitText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  keteranganInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 80,
+    textAlignVertical: "top",
+    marginBottom: 8,
+    backgroundColor: "#f9f9f9",
   },
 });

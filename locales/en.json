@@ -1,0 +1,96 @@
+{
+  "general": {
+    "loading": "Loading...",
+    "masuk": "Check In",
+    "pulang": "Check Out",
+    "absen": "Absent",
+    "izin": "Permission",
+    "sakit": "Sick",
+    "cuti": "Leave",
+    "alfa": "Alpha",
+    "welcome": "Welcome to E-Present!",
+    "semua": "All",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "home": {
+    "statistik": "Attendance for the Last Month",
+    "history": "Attendance History",
+    "lihat": "View More",
+    "calendar": "Calendar"
+  },
+  "bar": {
+    "home": "Home",
+    "history": "History",
+    "profile": "Profile"
+  },
+  "login": {
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "forgor": "Forgot Password?"
+  },
+  "profile": {
+    "name": "Employee Profile",
+    "address": "Address",
+    "shift": "Work Shift",
+    "Localization": "Language Settings",
+    "eng": "English",
+    "ind": "Indonesian",
+    "logout": "Logout",
+    "Konfirmasi": "Are you sure want to logout?"
+  },
+  "history": {
+    "title": "Attendance History",
+    "blank": "No attendance records for this month.",
+    "bulan": "Month",
+    "tahun": "Year",
+    "jenis": "Attendance Type",
+    "btn": "Apply",
+    "tidakMasuk": "Did Not Attend",
+    "semuaWaktu": "All Time"
+  },
+  "notif": {},
+  "camera": {
+    "warn": "Warning!",
+    "desc1": "Make sure your camera is active and facing your face.",
+    "desc2": "Make sure your GPS is active and you are at your work location"
+  },
+  "form": {
+    "title": "Permission Request",
+    "tglAwal": "Start Date",
+    "tglAkhir": "End Date",
+    "bukti": "Permission Proof",
+    "img": "Click to Upload Image",
+    "btnConfirm": "Submit",
+    "btnClose": "Close",
+    "jenis": {
+      "title": "Permission Type",
+      "izin": "Permission",
+      "sakit": "Sick",
+      "cuti": "Leave",
+      "default": "Select Permission Type"
+    }
+  },
+  "result": {
+    "error": "FAILED!",
+    "success": "SUCCESS!",
+    "desc1": "you can close this page.",
+    "desc2": "please wait, the system is processing your request...",
+    "desc3": "Uh Oh... It seems an error occurred. Please try again later or contact admin."
+  },
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  }
+}

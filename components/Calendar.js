@@ -5,7 +5,7 @@ import { Calendar } from "react-native-calendars";
 const API_KEY = "AIzaSyASdAnPyCeRCUpdpU4BcVKMI9G4xlx1wvA"; 
 const CALENDAR_ID = "id.indonesian%23holiday@group.v.calendar.google.com";
 
-export default function CalendarWithHoliday() {
+export default function CalendarWithHoliday({ onEventsChange }) {
   const [markedDates, setMarkedDates] = useState({});
   const [holidayInfo, setHolidayInfo] = useState("");
   const [events, setEvents] = useState([]);
@@ -22,6 +22,7 @@ export default function CalendarWithHoliday() {
       const data = await res.json();
       const items = data.items || [];
       setEvents(items);
+      if (onEventsChange) onEventsChange(items); // <-- kirim ke parent
 
       const marked = {};
       const today = new Date().toISOString().split("T")[0];
@@ -109,6 +110,12 @@ export default function CalendarWithHoliday() {
     </View>
   );
 }
+
+export function isHariLibur(dateString, events) {
+    // dateString format: "YYYY-MM-DD"
+    if (!Array.isArray(events)) return false;
+    return events.some(event => event.start.date === dateString);
+  }
 
 const styles = StyleSheet.create({
   container: {
