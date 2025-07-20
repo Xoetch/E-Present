@@ -45,11 +45,17 @@ const STATUS_CONFIG = {
     lightColor: "#FFEBEE",
     textColor: "#C62828",
   },
+  Terlambat: {
+   icon: "close-circle",
+    colors: ["#F44336", "#EF5350"],
+    lightColor: "#FFEBEE",
+    textColor: "#C62828",
+  },
   Lainnya: {
-    icon: "help-circle",
-    colors: ["#9E9E9E", "#BDBDBD"],
-    lightColor: "#F5F5F5",
-    textColor: "#616161",
+   icon: "close-circle",
+    colors: ["#F44336", "#EF5350"],
+    lightColor: "#FFEBEE",
+    textColor: "#C62828",
   },
 };
 

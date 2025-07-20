@@ -16,7 +16,7 @@ export default function MapLocationScreen() {
   const [location, setLocation] = useState(null);
   const [statusText, setStatusText] = useState("Mengecek lokasi Anda...");
   const [distance, setDistance] = useState(null);
-  const MAX_DISTANCE_METERS = 100;
+  const MAX_DISTANCE_METERS = 100000;
 
   const companyLocation = {
     latitude: -6.348943186235413,
@@ -86,7 +86,8 @@ export default function MapLocationScreen() {
       string: JSON.stringify({
         id_pengguna: userData.id_pengguna,
         jam: jam,
-        shift_kerja: userData.jam_shift,
+        shift_kerja: userData.id_shift,
+        status_kehadiran: "Hadir",
       }),
       name: "absensi",
       type: "application/json",
@@ -110,7 +111,13 @@ export default function MapLocationScreen() {
           },
         ]);
       } else {
-        Alert.alert("Gagal absen", result.message);
+        Alert.alert("Gagal", result.message, [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+          },
+        ]);
       }
     } catch (err) {
       Alert.alert("Error", "Terjadi kesalahan saat mengirim absensi");

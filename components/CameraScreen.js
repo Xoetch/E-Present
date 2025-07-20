@@ -2,6 +2,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Linking } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,52 +23,50 @@ export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef(null);
 
-const [hasClockInToday, setHasClockInToday] = useState(false);
-const [isLate, setIsLate] = useState(false);
-const [isBeforeEndShift, setIsBeforeEndShift] = useState(false);
-const [absenHistory, setAbsenHistory] = useState([]);
-const [hasClockOutToday, setHasClockOutToday] = useState(false);
+  const [hasClockInToday, setHasClockInToday] = useState(false);
+  const [isLate, setIsLate] = useState(false);
+  const [isBeforeEndShift, setIsBeforeEndShift] = useState(false);
+  const [absenHistory, setAbsenHistory] = useState([]);
+  const [hasClockOutToday, setHasClockOutToday] = useState(false);
 
-const getAbsenHistory = async () => {
-  try {
-    const userData = await AsyncStorage.getItem("userData");
-    const parsedUserData = JSON.parse(userData);
-    const userId = parsedUserData?.id_pengguna || parsedUserData?.id;
+  const getAbsenHistory = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      const parsedUserData = JSON.parse(userData);
+      const userId = parsedUserData?.id_pengguna || parsedUserData?.id;
 
-    if (!userId) {
-      console.warn("User ID tidak ditemukan.");
-      return;
+      if (!userId) {
+        console.warn("User ID tidak ditemukan.");
+        return;
+      }
+
+      const response = await fetch(`${API.HISTORY}/${userId}`);
+      const result = await response.json(); // Ambil JSON-nya
+
+      if (!Array.isArray(result?.data)) {
+        console.warn("Data riwayat absen tidak dalam format array.");
+        return;
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const todayAttendance = result.data.find(
+        (item) => item.tanggal === today
+      );
+
+      setAbsenHistory(result.data || []);
+      setHasClockInToday(!!todayAttendance?.jam_masuk);
+      setHasClockOutToday(!!todayAttendance?.jam_keluar);
+    } catch (error) {
+      console.error("Gagal fetch riwayat absen", error);
     }
-
-    const response = await fetch(`${API.HISTORY}/${userId}`);
-    const result = await response.json(); // Ambil JSON-nya
-
-    if (!Array.isArray(result?.data)) {
-      console.warn("Data riwayat absen tidak dalam format array.");
-      return;
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-
-    const todayAttendance = result.data.find(item => item.tanggal === today);
-
-    setAbsenHistory(result.data || []);
-    setHasClockInToday(!!todayAttendance?.jam_masuk);
-    setHasClockOutToday(!!todayAttendance?.jam_keluar);
-
-  } catch (error) {
-    console.error("Gagal fetch riwayat absen", error);
-  }
-};
-
-
+  };
 
   const timeToSeconds = (timeStr) => {
     const [h, m, s] = timeStr.split(":").map(Number);
     return h * 3600 + m * 60 + s;
   };
 
-  
   const fetchUserData = async () => {
     try {
       const dataString = await AsyncStorage.getItem("userData");
@@ -90,13 +89,13 @@ const getAbsenHistory = async () => {
         console.log("Jam sekarang:", currentInSeconds);
         console.log("Jam shift:", start, "-", end);
 
-              // Pengecekan apakah user telat
-      const late = currentInSeconds > start;
-      setIsLate(late);
+        // Pengecekan apakah user telat
+        const late = currentInSeconds > start;
+        setIsLate(late);
 
-      // Pengecekan apakah sebelum jam pulang
-      const beforeEnd = currentInSeconds < end;
-      setIsBeforeEndShift(beforeEnd);
+        // Pengecekan apakah sebelum jam pulang
+        const beforeEnd = currentInSeconds < end;
+        setIsBeforeEndShift(beforeEnd);
 
         let allowed = false;
         if (start < end) {
@@ -115,7 +114,10 @@ const getAbsenHistory = async () => {
               {
                 text: "OK",
                 onPress: () => {
-                  navigation.navigate("MainTabs");
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: "MainTabs" }],
+                  });
                 },
               },
             ]
@@ -127,7 +129,10 @@ const getAbsenHistory = async () => {
     } catch (e) {
       console.log("Gagal mengambil Shift:", e);
       Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
-      navigation.navigate("MainTabs");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs" }],
+      });
     }
   };
 
@@ -139,8 +144,7 @@ const getAbsenHistory = async () => {
       const minutes = now.getMinutes().toString().padStart(2, "0");
       const seconds = now.getSeconds().toString().padStart(2, "0");
       setCurrentTime(`${hours}:${minutes}:${seconds}`);
-            setLoadingTime(false);
-
+      setLoadingTime(false);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -150,35 +154,30 @@ const getAbsenHistory = async () => {
     useCallback(() => {
       (async () => {
         await fetchUserData();
-          await getAbsenHistory();
+        await getAbsenHistory();
         const { status } = await requestPermission();
         if (status !== "granted") {
-          alert("Izin kamera ditolak");
+          Alert.alert(
+            "Izin Kamera Ditolak",
+            "Silakan aktifkan izin kamera secara manual di pengaturan aplikasi.",
+            [
+              { text: "Batal", style: "cancel" },
+              {
+                text: "Buka Pengaturan",
+                onPress: () => Linking.openSettings(), // arahkan ke settings
+              },
+            ]
+          );
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "MainTabs" }],
+          });
         }
       })();
     }, [])
   );
 
   if (!permission) return <View style={styles.container} />;
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={styles.permissionButton}
-        >
-          <Text style={{ color: "#fff" }}>Grant Permission</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const toggleFlash = () => {
-    setFlash((current) => (current === "off" ? "on" : "off"));
-  };
 
   const handleCapture = async () => {
     try {
@@ -221,64 +220,76 @@ const getAbsenHistory = async () => {
           facing={facing}
           flash={flash}
         >
-<View style={styles.cameraOverlay}>
-  <View style={{ flexDirection: "row", gap: 8 }}>
-    {hasClockInToday && !hasClockOutToday && (
-      <View style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}>
-        <Ionicons name="checkmark-circle" size={20} color="#00796B" />
-        <Text style={styles.warningText}>Sudah absen masuk</Text>
-      </View>
-    )}
+          <View style={styles.cameraOverlay}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {hasClockInToday && !hasClockOutToday && (
+                <View
+                  style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#00796B" />
+                  <Text style={styles.warningText}>Sudah absen masuk</Text>
+                </View>
+              )}
 
-    {hasClockOutToday && (
-      <View style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}>
-        <Ionicons name="checkmark-circle" size={20} color="#00796B" />
-        <Text style={styles.warningText}>Sudah absen pulang</Text>
-      </View>
-    )}
+              {hasClockOutToday && (
+                <View
+                  style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#00796B" />
+                  <Text style={styles.warningText}>Sudah absen pulang</Text>
+                </View>
+              )}
 
-    {!hasClockInToday && isLate && (
-      <View style={[styles.warningCard, { backgroundColor: "#FFCDD2" }]}>
-        <Ionicons name="alert-circle" size={20} color="#C62828" />
-        <Text style={styles.warningText}>Telat absensi</Text>
-      </View>
-    )}
+              {!hasClockInToday && isLate && (
+                <View
+                  style={[styles.warningCard, { backgroundColor: "#FFCDD2" }]}
+                >
+                  <Ionicons name="alert-circle" size={20} color="#C62828" />
+                  <Text style={styles.warningText}>Telat absensi</Text>
+                </View>
+              )}
 
-    {!hasClockOutToday && isBeforeEndShift && (
-      <View style={[styles.warningCard, { backgroundColor: "#FFF9C4" }]}>
-        <Ionicons name="time" size={20} color="#FBC02D" />
-        <Text style={styles.warningText}>Belum waktu pulang</Text>
-      </View>
-    )}
-  </View>
+              {!hasClockOutToday && isBeforeEndShift && (
+                <View
+                  style={[styles.warningCard, { backgroundColor: "#FFF9C4" }]}
+                >
+                  <Ionicons name="time" size={20} color="#FBC02D" />
+                  <Text style={styles.warningText}>Belum waktu pulang</Text>
+                </View>
+              )}
+            </View>
 
-  <WithLoader loading={loadingTime}>
-    <Text style={styles.cameraTime}>{currentTime}</Text>
-  </WithLoader>
-</View>
-
-
-
+            <WithLoader loading={loadingTime}>
+              <Text style={styles.cameraTime}>{currentTime}</Text>
+            </WithLoader>
+          </View>
         </CameraView>
       </View>
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-        <TouchableOpacity onPress={() => navigation.navigate("MainTabs")}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "MainTabs" }],
+            })
+          }
+        >
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
-          <Ionicons name="camera-outline" size={28} color="#fff" />
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity
+            style={styles.captureButton}
+            onPress={handleCapture}
+          >
+            <Ionicons name="camera-outline" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity onPress={toggleFlash}>
-          <Ionicons
-            name={flash === "off" ? "flash-off-outline" : "flash-outline"}
-            size={28}
-            color="#2E7BE8"
-          />
-        </TouchableOpacity>
+        {/* Kosongkan sisi kanan agar capture tetap center */}
+        <View style={{ width: 28 }} />
       </View>
     </View>
   );
@@ -319,7 +330,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     zIndex: 10,
-    
   },
   cameraTime: { fontSize: 44, color: "#fff", fontWeight: "bold" },
   footer: {
@@ -338,19 +348,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
-warningCard: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: 6,
-  paddingHorizontal: 10,
-  borderRadius: 8,
-},
+  warningCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
 
-
-warningText: {
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#333",
-},
-
+  warningText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
 });
