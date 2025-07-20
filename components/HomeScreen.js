@@ -26,6 +26,7 @@ export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
 const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().split("T")[0]);
+const [holidays, setHolidays] = useState([]);
 
   const [todayAttendance, setTodayAttendance] = useState({
   jam_masuk: null,
@@ -35,12 +36,9 @@ const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().sp
 
 
   const [chartData, setChartData] = useState([]);
-  const [events, setEvents] = useState([]);
   const today = new Date().toISOString().split("T")[0];
-  const libur = isHariLibur(today, events);
 
   const [disabledDates, setDisabledDates] = useState([]);
-  const isTodayDisabled = disabledDates.includes(today);
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
   const [userData, setUserData] = useState({
@@ -157,9 +155,6 @@ const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().sp
     fetchAttendanceHistory();
   }, [currentDateStr]);
 
-  useEffect(() => {
-    console.log("Events di FormizinPopup:", events);
-  }, [events]);
 
   // Animation + userData update when screen focused
   useFocusEffect(
@@ -295,7 +290,7 @@ const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().sp
                 isTodayHoliday() && { opacity: 0.5 }
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isTodayHoliday()}
+              // disabled={isTodayHoliday()}
             >
               <Ionicons name="scan" size={24} color="#2E7BE8" />
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>

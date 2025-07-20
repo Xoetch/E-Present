@@ -102,11 +102,7 @@ export default function CalendarWithHoliday({ holidays, onHolidaysChange }) {
   );
 }
 
-export function isHariLibur(dateString, events) {
-    // dateString format: "YYYY-MM-DD"
-    if (!Array.isArray(events)) return false;
-    return events.some(event => event.start.date === dateString);
-  }
+
 
 const styles = StyleSheet.create({
   container: {

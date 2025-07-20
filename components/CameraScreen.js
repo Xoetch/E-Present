@@ -255,7 +255,7 @@ console.log("Isi userData dari AsyncStorage:", data);
     {!hasClockInToday && isLate && (
       <View style={[styles.warningCard, { backgroundColor: "#FFCDD2" }]}>
         <Ionicons name="alert-circle" size={20} color="#C62828" />
-        <Text style={styles.warningText}>Telat absensi</Text>
+        <Text style={styles.warningText}>Terlambat absensi</Text>
       </View>
     )}
 
