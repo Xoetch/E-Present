@@ -6,6 +6,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WithLoader from "../utils/Loader";
+import API from "../utils/ApiConfig";
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState("front");
@@ -21,65 +22,126 @@ export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const cameraRef = useRef(null);
 
+const [hasClockInToday, setHasClockInToday] = useState(false);
+const [isLate, setIsLate] = useState(false);
+const [isBeforeEndShift, setIsBeforeEndShift] = useState(false);
+const [absenHistory, setAbsenHistory] = useState([]);
+const [hasClockOutToday, setHasClockOutToday] = useState(false);
+
+const getAbsenHistory = async () => {
+  try {
+    const userData = await AsyncStorage.getItem("userData");
+    const parsedUserData = JSON.parse(userData);
+    const userId = parsedUserData?.id_pengguna || parsedUserData?.id;
+
+    if (!userId) {
+      console.warn("User ID tidak ditemukan.");
+      return;
+    }
+
+    const response = await fetch(`${API.HISTORY}/${userId}`);
+    const result = await response.json(); // Ambil JSON-nya
+
+    if (!Array.isArray(result?.data)) {
+      console.warn("Data riwayat absen tidak dalam format array.");
+      return;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const todayAttendance = result.data.find(item => item.tanggal === today);
+
+    setAbsenHistory(result.data || []);
+    setHasClockInToday(!!todayAttendance?.jam_masuk);
+    setHasClockOutToday(!!todayAttendance?.jam_keluar);
+
+  } catch (error) {
+    console.error("Gagal fetch riwayat absen", error);
+  }
+};
+
+
+
   const timeToSeconds = (timeStr) => {
     const [h, m, s] = timeStr.split(":").map(Number);
     return h * 3600 + m * 60 + s;
   };
 
-  const fetchUserData = async () => {
-    try {
-      const dataString = await AsyncStorage.getItem("userData");
-      if (dataString) {
-        const data = JSON.parse(dataString);
-        setUserData(data);
+  const shiftTimes = {
+  "SFM-OP01": { start: "18:00:00", end: "03:00:00" },
+  "SFP-OP01": { start: "07:00:00", end: "16:00:00" },
+};
 
-        const now = new Date();
-        const currentInSeconds =
-          now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+const fetchUserData = async () => {
+  try {
+    const dataString = await AsyncStorage.getItem("userData");
+    if (dataString) {
+      const data = JSON.parse(dataString);
+      setUserData(data);
+console.log("Isi userData dari AsyncStorage:", data);
 
-        const shift = data.jam_shift?.toLowerCase();
-        const [startStr, endStr] = data.jam_shift.split(" - ");
-        const [sh, sm] = startStr.split(":").map(Number);
-        const [eh, em] = endStr.split(":").map(Number);
+      const now = new Date();
+      const currentInSeconds =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
-        const start = sh * 3600 + sm * 60;
-        const end = eh * 3600 + em * 60;
+      const shift = data.id_shift;
+      const shiftTime = shiftTimes[shift];
 
-        console.log("Jam sekarang:", currentInSeconds);
-        console.log("Jam shift:", start, "-", end);
-
-        let allowed = false;
-        if (start < end) {
-          allowed = currentInSeconds >= start && currentInSeconds <= end;
-        } else {
-          allowed = currentInSeconds >= start || currentInSeconds <= end;
-        }
-
-        console.log("Diperbolehkan?", allowed);
-
-        if (!allowed) {
-          Alert.alert(
-            "Akses Ditolak",
-            "Kamera hanya dapat digunakan sesuai jam shift Anda.",
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  navigation.navigate("MainTabs");
-                },
-              },
-            ]
-          );
-        }
-
-        setIsAllowedTime(allowed);
+      if (!shiftTime) {
+        Alert.alert("Shift tidak ditemukan", "Shift ID tidak dikenali.");
+        navigation.navigate("MainTabs");
+        return;
       }
-    } catch (e) {
-      console.log("Gagal mengambil Shift:", e);
-      Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
-      navigation.navigate("MainTabs");
+
+      const [sh, sm, ss] = shiftTime.start.split(":").map(Number);
+      const [eh, em, es] = shiftTime.end.split(":").map(Number);
+
+      const start = sh * 3600 + sm * 60 + ss;
+      const end = eh * 3600 + em * 60 + es;
+
+      console.log("Jam sekarang:", currentInSeconds);
+      console.log("Jam shift:", start, "-", end);
+
+      const late = currentInSeconds > start;
+      setIsLate(late);
+
+      const beforeEnd = currentInSeconds < end;
+      setIsBeforeEndShift(beforeEnd);
+
+      let allowed = false;
+      if (start < end) {
+        allowed = currentInSeconds >= start && currentInSeconds <= end;
+      } else {
+        // shift lintas hari
+        allowed = currentInSeconds >= start || currentInSeconds <= end;
+      }
+
+      console.log("Diperbolehkan?", allowed);
+
+      if (!allowed) {
+        Alert.alert(
+          "Akses Ditolak",
+          "Kamera hanya dapat digunakan sesuai jam shift Anda.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                navigation.navigate("MainTabs");
+              },
+            },
+          ]
+        );
+      }
+
+      setIsAllowedTime(allowed);
     }
-  };
+  } catch (e) {
+    console.log("Gagal mengambil Shift:", e);
+    Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
+    navigation.navigate("MainTabs");
+  }
+};
+
 
   // Timer realtime jam
   useEffect(() => {
@@ -100,6 +162,7 @@ export default function CameraScreen() {
     useCallback(() => {
       (async () => {
         await fetchUserData();
+          await getAbsenHistory();
         const { status } = await requestPermission();
         if (status !== "granted") {
           alert("Izin kamera ditolak");
@@ -135,6 +198,7 @@ export default function CameraScreen() {
       const userDataString = await AsyncStorage.getItem("userData");
       const userData = JSON.parse(userDataString);
 
+
       navigation.navigate("LocationMap", {
         photoUri: photo.uri,
         userData: userData,
@@ -144,6 +208,8 @@ export default function CameraScreen() {
       alert("Terjadi kesalahan saat mengambil foto");
     }
   };
+
+
 
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
@@ -170,11 +236,44 @@ export default function CameraScreen() {
           facing={facing}
           flash={flash}
         >
-          <View style={styles.cameraOverlay}>
-            <WithLoader loading={loadingTime}>
-              <Text style={styles.cameraTime}>{currentTime}</Text>
-            </WithLoader>
-          </View>
+<View style={styles.cameraOverlay}>
+  <View style={{ flexDirection: "row", gap: 8 }}>
+    {hasClockInToday && !hasClockOutToday && (
+      <View style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}>
+        <Ionicons name="checkmark-circle" size={20} color="#00796B" />
+        <Text style={styles.warningText}>Sudah absen masuk</Text>
+      </View>
+    )}
+
+    {hasClockOutToday && (
+      <View style={[styles.warningCard, { backgroundColor: "#E0F7FA" }]}>
+        <Ionicons name="checkmark-circle" size={20} color="#00796B" />
+        <Text style={styles.warningText}>Sudah absen pulang</Text>
+      </View>
+    )}
+
+    {!hasClockInToday && isLate && (
+      <View style={[styles.warningCard, { backgroundColor: "#FFCDD2" }]}>
+        <Ionicons name="alert-circle" size={20} color="#C62828" />
+        <Text style={styles.warningText}>Telat absensi</Text>
+      </View>
+    )}
+
+    {!hasClockOutToday && isBeforeEndShift && (
+      <View style={[styles.warningCard, { backgroundColor: "#FFF9C4" }]}>
+        <Ionicons name="time" size={20} color="#FBC02D" />
+        <Text style={styles.warningText}>Belum waktu pulang</Text>
+      </View>
+    )}
+  </View>
+
+  <WithLoader loading={loadingTime}>
+    <Text style={styles.cameraTime}>{currentTime}</Text>
+  </WithLoader>
+</View>
+
+
+
         </CameraView>
       </View>
 
@@ -184,9 +283,47 @@ export default function CameraScreen() {
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
+        {/* <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
           <Ionicons name="camera-outline" size={28} color="#fff" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+
+<TouchableOpacity
+  style={[
+    styles.captureButton,
+    hasClockInToday && !hasClockOutToday && isBeforeEndShift && {
+      backgroundColor: "gray", // tombol tetap abu-abu sebagai indikasi
+    },
+  ]}
+  onPress={() => {
+    if (hasClockInToday && !hasClockOutToday && isBeforeEndShift) {
+      Alert.alert(
+        "Belum Boleh Pulang",
+        "Silakan absen pulang setelah jam kerja selesai.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("MainTabs"),
+          },
+        ]
+      );
+    } else {
+      handleCapture(); // Lanjut ke proses kamera jika kondisi sah
+    }
+  }}
+>
+  <Ionicons
+    name="camera-outline"
+    size={28}
+    color={
+      hasClockInToday && !hasClockOutToday && isBeforeEndShift
+        ? "#ccc" // warna icon saat kondisi belum boleh pulang
+        : "#fff"
+    }
+  />
+</TouchableOpacity>
+
+
+
 
         <TouchableOpacity onPress={toggleFlash}>
           <Ionicons
@@ -235,6 +372,7 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     zIndex: 10,
+    
   },
   cameraTime: { fontSize: 44, color: "#fff", fontWeight: "bold" },
   footer: {
@@ -253,4 +391,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
+warningCard: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingVertical: 6,
+  paddingHorizontal: 10,
+  borderRadius: 8,
+},
+
+
+warningText: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#333",
+},
+
 });

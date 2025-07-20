@@ -25,11 +25,19 @@ const screenHeight = Dimensions.get("window").height;
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
+const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().split("T")[0]);
+
+  const [todayAttendance, setTodayAttendance] = useState({
+  jam_masuk: null,
+  jam_keluar: null,
+  });
+
+
+
   const [chartData, setChartData] = useState([]);
+  const [events, setEvents] = useState([]);
   const today = new Date().toISOString().split("T")[0];
-
-  const [holidays, setHolidays] = useState([]);
-
+  const libur = isHariLibur(today, events);
 
   const [disabledDates, setDisabledDates] = useState([]);
   const isTodayDisabled = disabledDates.includes(today);
@@ -50,24 +58,45 @@ export default function HomeScreen({ navigation }) {
   const [recentAttendance, setRecentAttendance] = useState([]);
 
   useEffect(() => {
+  const interval = setInterval(() => {
+    const now = new Date().toISOString().split("T")[0];
+    if (now !== currentDateStr) {
+      setCurrentDateStr(now);
+    }
+  }, 60 * 1000); // Cek setiap 1 menit
+
+  return () => clearInterval(interval);
+}, [currentDateStr]);
+
+
+  useEffect(() => {
     const fetchAttendanceHistory = async () => {
       try {
         const userDataStr = await AsyncStorage.getItem("userData");
         const userData = JSON.parse(userDataStr);
         const userId = userData?.id_pengguna;
-
+        
         if (!userId) return;
-
+        
         const response = await fetch(`${API.HISTORY}/${userId}`);
         const result = await response.json();
-        // console.log("Attendance History:", result);
-
+        
         if (!result?.data) return;
-
+        
         const hadirData = result.data.filter(
           (item) => item.status_kehadiran === "Hadir"
         );
+        
+        const todayEntry = result.data.find(item => item.tanggal === today);
 
+        if (todayEntry) {
+  setTodayAttendance({
+    jam_masuk: todayEntry.jam_masuk || null,
+    jam_keluar: todayEntry.jam_keluar || null,
+  });
+} else {
+  setTodayAttendance({ jam_masuk: null, jam_keluar: null });
+}
         let converted = [];
         hadirData.forEach((item) => {
           if (item.jam_masuk) {
@@ -126,8 +155,11 @@ export default function HomeScreen({ navigation }) {
     };
 
     fetchAttendanceHistory();
-  }, []);
+  }, [currentDateStr]);
 
+  useEffect(() => {
+    console.log("Events di FormizinPopup:", events);
+  }, [events]);
 
   // Animation + userData update when screen focused
   useFocusEffect(
@@ -281,6 +313,24 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.card}>
+  <Text style={styles.cardTitle}>Absensi Anda</Text>
+  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Text style={{ color: '#2E7BE8', fontWeight: 'bold' }}>Jam Masuk</Text>
+      <Text style={{ fontSize: 16, marginTop: 5 }}>
+        {todayAttendance.jam_masuk ? formatToAMPM(todayAttendance.jam_masuk) : '-'}
+      </Text>
+    </View>
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Jam Pulang</Text>
+      <Text style={{ fontSize: 16, marginTop: 5 }}>
+        {todayAttendance.jam_keluar ? formatToAMPM(todayAttendance.jam_keluar) : '-'}
+      </Text>
+    </View>
+  </View>
+</View>
+
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
