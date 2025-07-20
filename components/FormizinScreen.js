@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import API from "../utils/ApiConfig";
 
-export default function FormizinPopup({ visible, onClose, events, disabledDates }) {
+export default function FormizinPopup({ visible, onClose, disabledDates }) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const [startDate, setStartDate] = useState(tomorrow);
@@ -62,7 +62,6 @@ export default function FormizinPopup({ visible, onClose, events, disabledDates 
 
   const isHariLibur = (date) => {
     const ymd = date.toISOString().slice(0, 10);
-    const isEventHoliday = Array.isArray(events) && events.some(event => event.start?.date === ymd);
     const day = date.getDay();
     const isWeekend = day === 0 || day === 6;
     const isDisabled = disabledDates.includes(ymd);

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import CalendarWithHoliday, { isHariLibur } from "./Calendar";
+import CalendarWithHoliday from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
 import WithLoader from "../utils/Loader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,9 +26,10 @@ export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
   const [chartData, setChartData] = useState([]);
-  const [events, setEvents] = useState([]);
   const today = new Date().toISOString().split("T")[0];
-  const libur = isHariLibur(today, events);
+
+  const [holidays, setHolidays] = useState([]);
+
 
   const [disabledDates, setDisabledDates] = useState([]);
   const isTodayDisabled = disabledDates.includes(today);
@@ -59,6 +60,7 @@ export default function HomeScreen({ navigation }) {
 
         const response = await fetch(`${API.HISTORY}/${userId}`);
         const result = await response.json();
+        // console.log("Attendance History:", result);
 
         if (!result?.data) return;
 
@@ -126,9 +128,6 @@ export default function HomeScreen({ navigation }) {
     fetchAttendanceHistory();
   }, []);
 
-  useEffect(() => {
-    console.log("Events di FormizinPopup:", events);
-  }, [events]);
 
   // Animation + userData update when screen focused
   useFocusEffect(
@@ -195,6 +194,19 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, []);
 
+  const isTodayHoliday = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const dayOfWeek = new Date().getDay(); // 0 = Minggu, 6 = Sabtu
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isNationalHoliday = holidays.some(item => {
+      const start = new Date(item.tanggal_mulai);
+      const end = new Date(item.tanggal_selesai);
+      const current = new Date(today);
+      return current >= start && current <= end;
+    });
+    return isNationalHoliday || isWeekend;
+  };
+
   const handleNavigation = (screenName) => {
     Animated.timing(animatedValue, {
       toValue: screenHeight,
@@ -248,10 +260,10 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                (libur || isTodayDisabled) && { opacity: 0.5 }
+                isTodayHoliday() && { opacity: 0.5 }
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={libur || isTodayDisabled}
+              disabled={isTodayHoliday()}
             >
               <Ionicons name="scan" size={24} color="#2E7BE8" />
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
@@ -360,7 +372,9 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
             <View style={styles.calendarContainer}>
-              <CalendarWithHoliday onEventsChange={setEvents} />
+              <CalendarWithHoliday
+              holidays={holidays}
+              onHolidaysChange={setHolidays} />
             </View>
           </View>
         </Animated.View>
@@ -369,7 +383,6 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
-        events={events}
         disabledDates={disabledDates}
       />
     </View>

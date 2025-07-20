@@ -13,6 +13,7 @@ const API = {
   PIE_CHART: `${BASE_URL}/rekap/pieSebulan`,
   CHART_ABSENSI_BULANAN: `${BASE_URL}/rekap/lineAbsensiBulanan`,
   EXISTING_IZIN: `${BASE_URL}/reqPermit/getExistingReqPermit`,
+  GET_HOLIDAY: `${BASE_URL}/holiday/getHolidays`,
 };
 
 export default API;
