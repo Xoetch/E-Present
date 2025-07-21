@@ -35,6 +35,7 @@ export default function ProfileScreen({ onLogout }) {
             nama_lengkap: data.nama_lengkap || "",
             alamat_lengkap: data.alamat_lengkap || "",
             jam_shift: data.jam_shift || "",
+            id_shift: data.id_shift || "",
             foto_pengguna: data.foto_pengguna,
           });
 

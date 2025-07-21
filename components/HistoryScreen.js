@@ -271,7 +271,7 @@ export default function HistoryScreen() {
 
       const baseStatus = getBaseStatus(item.status_kehadiran);
       const { icon, colors, lightColor, textColor } = STATUS_CONFIG[baseStatus];
-
+console.log("Item:", item);
       return (
         <TouchableOpacity onPress={() => handleItemPress(item)} style={styles.itemContainer}>
           <View style={[styles.statusIndicator, { backgroundColor: lightColor }]}>
@@ -414,6 +414,8 @@ export default function HistoryScreen() {
                     <Picker.Item label={t("general.hadir")} value="Hadir" />
                     <Picker.Item label={t("general.izin")} value="Izin" />
                     <Picker.Item label={t("general.alfa")} value="Alpa" />
+                    <Picker.Item label={t("history.tidakAbsen")} value="Tidak absen pulang" />
+                    <Picker.Item label={t("history.telat")} value="Terlambat" />
                   </Picker>
                 </View>
               </View>

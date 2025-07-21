@@ -59,7 +59,9 @@
     "found": " data ditemukan",
     "detail": "Detail Absensi",
     "checkIn": "Bukti Absen Masuk",
-    "checkOut": "Bukti Absen Pulang"
+    "checkOut": "Bukti Absen Pulang",
+    "telat": "Terlambat",
+    "tidakAbsen" : "Tidak Absen Pulang"
   },
   "notif": {},
   "camera": {

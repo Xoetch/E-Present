@@ -71,36 +71,68 @@ export default function MapLocationScreen() {
     })();
   }, []);
 
-  const submitAbsensi = async (photoUri, userData) => {
-    const now = new Date();
-    const jam = now.toTimeString().split(" ")[0];
+const submitAbsensi = async (photoUri, userData) => {
+  const now = new Date();
+  const jam = now.toTimeString().split(" ")[0];
 
-    const formData = new FormData();
-    formData.append("file", {
-      uri: photoUri,
-      type: "image/jpeg",
-      name: `absen_${Date.now()}.jpg`,
+  // Tentukan status_kehadiran
+  const shiftTimes = {
+    "SFM-OP01": { start: "18:00:00", end: "03:00:00" },
+    "SFP-OP01": { start: "07:00:00", end: "16:00:00" },
+  };
+
+  const shift = userData.id_shift;
+  const shiftStart = shiftTimes[shift]?.start;
+
+  let status_kehadiran = "Hadir";
+  if (shiftStart) {
+    const [sh, sm, ss] = shiftStart.split(":").map(Number);
+    const shiftStartSeconds = sh * 3600 + sm * 60 + ss;
+
+    const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    if (currentSeconds > shiftStartSeconds) {
+      status_kehadiran = "Terlambat";
+    }
+  }
+
+  const formData = new FormData();
+  formData.append("file", {
+    uri: photoUri,
+    type: "image/jpeg",
+    name: `absen_${Date.now()}.jpg`,
+  });
+
+  formData.append("absensi", {
+    string: JSON.stringify({
+      id_pengguna: userData.id_pengguna,
+      jam: jam,
+      shift_kerja: shift,
+      status_kehadiran: status_kehadiran,
+    }),
+    name: "absensi",
+    type: "application/json",
+  });
+
+//   formData.append("absensi", JSON.stringify({
+//   id_pengguna: userData.id_pengguna,
+//   jam: jam,
+//   shift_kerja: shift,
+//   status_kehadiran: status_kehadiran,
+// }));
+
+  console.log("FormData dikirim: ", formData);
+
+
+
+  try {
+    const response = await fetch(API.ABSEN, {
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data" },
+      body: formData,
     });
 
-    formData.append("absensi", {
-      string: JSON.stringify({
-        id_pengguna: userData.id_pengguna,
-        jam: jam,
-        shift_kerja: userData.id_shift,
-        status_kehadiran: "Hadir",
-      }),
-      name: "absensi",
-      type: "application/json",
-    });
-
-    try {
-      const response = await fetch(API.ABSEN, {
-        method: "POST",
-        headers: { "Content-Type": "multipart/form-data" },
-        body: formData,
-      });
-
-      const result = await response.json();
+    const result = await response.json();
 
       if (result.status === 200) {
         Alert.alert("Sukses", result.message, [

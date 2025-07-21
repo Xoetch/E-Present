@@ -67,24 +67,39 @@ export default function CameraScreen() {
     return h * 3600 + m * 60 + s;
   };
 
+  const shiftTimes = {
+    "SFM-OP01": { start: "18:00:00", end: "03:00:00" },
+    "SFP-OP01": { start: "07:00:00", end: "16:00:00" },
+  };
+
   const fetchUserData = async () => {
     try {
       const dataString = await AsyncStorage.getItem("userData");
       if (dataString) {
         const data = JSON.parse(dataString);
         setUserData(data);
+        console.log("Isi userData dari AsyncStorage:", data);
 
         const now = new Date();
         const currentInSeconds =
           now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
-        const shift = data.jam_shift?.toLowerCase();
-        const [startStr, endStr] = data.jam_shift.split(" - ");
-        const [sh, sm] = startStr.split(":").map(Number);
-        const [eh, em] = endStr.split(":").map(Number);
+        const shift = data.id_shift;
+        const shiftTime = shiftTimes[shift];
 
-        const start = sh * 3600 + sm * 60;
-        const end = eh * 3600 + em * 60;
+        console.log("Shift ID:", shift);
+        console.log("Shift ID:", shiftTime);
+        if (!shiftTime) {
+          Alert.alert("Shift tidak ditemukan", "Shift ID tidak dikenali.");
+          navigation.navigate("MainTabs");
+          return;
+        }
+
+        const [sh, sm, ss] = shiftTime.start.split(":").map(Number);
+        const [eh, em, es] = shiftTime.end.split(":").map(Number);
+
+        const start = sh * 3600 + sm * 60 + ss;
+        const end = eh * 3600 + em * 60 + es;
 
         console.log("Jam sekarang:", currentInSeconds);
         console.log("Jam shift:", start, "-", end);
@@ -101,6 +116,7 @@ export default function CameraScreen() {
         if (start < end) {
           allowed = currentInSeconds >= start && currentInSeconds <= end;
         } else {
+          // shift lintas hari
           allowed = currentInSeconds >= start || currentInSeconds <= end;
         }
 
@@ -270,25 +286,56 @@ export default function CameraScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity
           onPress={() =>
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "MainTabs" }],
-            })
+            navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] })
           }
         >
           <Ionicons name="arrow-back" size={28} color="#2E7BE8" />
         </TouchableOpacity>
 
-        <View>
+        <View style={styles.captureWrapper}>
           <TouchableOpacity
-            style={styles.captureButton}
-            onPress={handleCapture}
+            style={[
+              styles.captureButton,
+              hasClockInToday &&
+                !hasClockOutToday &&
+                isBeforeEndShift && {
+                  backgroundColor: "gray",
+                },
+            ]}
+            onPress={() => {
+              if (hasClockInToday && !hasClockOutToday && isBeforeEndShift) {
+                Alert.alert(
+                  "Belum Boleh Pulang",
+                  "Silakan absen pulang setelah jam kerja selesai.",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () =>
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: "MainTabs" }],
+                        }),
+                    },
+                  ]
+                );
+              } else {
+                handleCapture();
+              }
+            }}
           >
-            <Ionicons name="camera-outline" size={28} color="#fff" />
+            <Ionicons
+              name="camera-outline"
+              size={28}
+              color={
+                hasClockInToday && !hasClockOutToday && isBeforeEndShift
+                  ? "#ccc"
+                  : "#fff"
+              }
+            />
           </TouchableOpacity>
         </View>
 
-        {/* Kosongkan sisi kanan agar capture tetap center */}
+        {/* Spacer kanan */}
         <View style={{ width: 28 }} />
       </View>
     </View>
@@ -335,19 +382,27 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor: "#fff",
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between", // lebih natural tanpa tombol tengah yang menggantung
     alignItems: "center",
-    paddingTop: 12,
+    paddingHorizontal: 24,
+    paddingTop: 10,
   },
+
   captureButton: {
     backgroundColor: "#2E7BE8",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5, // untuk Android shadow
   },
+
   warningCard: {
     flexDirection: "row",
     alignItems: "center",

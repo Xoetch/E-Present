@@ -2,9 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import CalendarWithHoliday, { isHariLibur } from "./Calendar";
+import CalendarWithHoliday from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
 import WithLoader from "../utils/Loader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,21 +25,27 @@ const screenHeight = Dimensions.get("window").height;
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
 
-  const [currentDateStr, setCurrentDateStr] = useState(new Date().toISOString().split("T")[0]);
+  const [currentDateStr, setCurrentDateStr] = useState(() => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`; // hasilnya format YYYY-MM-DD sesuai zona lokal
+  });
+
   const [todayAttendance, setTodayAttendance] = useState({
     jam_masuk: null,
     jam_keluar: null,
   });
 
   const [chartData, setChartData] = useState([]);
-  const [events, setEvents] = useState([]);
   const today = new Date().toISOString().split("T")[0];
-  const libur = isHariLibur(today, events);
 
   const [disabledDates, setDisabledDates] = useState([]);
-  const isTodayDisabled = disabledDates.includes(today);
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
+  const [holidays, setHolidays] = useState([]);
+
   const [userData, setUserData] = useState({
     id_pengguna: null,
     nama_lengkap: "",
@@ -45,6 +60,14 @@ export default function HomeScreen({ navigation }) {
 
   const [recentAttendance, setRecentAttendance] = useState([]);
 
+  const formatToAMPM = (time24) => {
+    if (!time24) return "-";
+    const [hourStr, minute] = time24.split(":");
+    const hour = parseInt(hourStr);
+    // const suffix = hour >= 12 ;
+    return `${hourStr}:${minute} `;
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date().toISOString().split("T")[0];
@@ -56,106 +79,107 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, [currentDateStr]);
 
-useFocusEffect(
-  useCallback(() => {
-    const fetchAttendanceHistory = async () => {
-      try {
-        const userDataStr = await AsyncStorage.getItem("userData");
-        const userData = JSON.parse(userDataStr);
-        const userId = userData?.id_pengguna;
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAttendanceHistory = async () => {
+        try {
+          const userDataStr = await AsyncStorage.getItem("userData");
+          const userData = JSON.parse(userDataStr);
+          const userId = userData?.id_pengguna;
 
-        if (!userId) return;
+          if (!userId) return;
 
-        const response = await fetch(`${API.HISTORY}/${userId}`);
-        const result = await response.json();
+          const response = await fetch(`${API.HISTORY}/${userId}`);
+          const result = await response.json();
 
-        if (!result?.data) return;
+          if (!result?.data) return;
 
-        const hadirData = result.data.filter((item) => item.status_kehadiran === "Hadir");
+          const hadirData = result.data.filter(
+            (item) => item.status_kehadiran === "Hadir"
+          );
 
-        const todayEntry = result.data.find((item) => item.tanggal === today);
+          const todayEntry = result.data.find((item) => item.tanggal === today);
 
-        if (todayEntry) {
-          setTodayAttendance({
-            jam_masuk: todayEntry.jam_masuk || null,
-            jam_keluar: todayEntry.jam_keluar || null,
+          if (todayEntry) {
+            setTodayAttendance({
+              jam_masuk: todayEntry.jam_masuk || null,
+              jam_keluar: todayEntry.jam_keluar || null,
+            });
+          } else {
+            setTodayAttendance({ jam_masuk: null, jam_keluar: null });
+          }
+
+          let converted = [];
+          hadirData.forEach((item) => {
+            if (item.jam_masuk) {
+              converted.push({
+                id: `${item.tanggal}_${item.jam_masuk}_masuk`,
+                type: "Masuk Kerja",
+                time: item.jam_masuk,
+                date: item.tanggal,
+              });
+            }
+            if (item.jam_keluar) {
+              converted.push({
+                id: `${item.tanggal}_${item.jam_keluar}_pulang`,
+                type: "Pulang Kerja",
+                time: item.jam_keluar,
+                date: item.tanggal,
+              });
+            }
           });
-        } else {
-          setTodayAttendance({ jam_masuk: null, jam_keluar: null });
-        }
 
-        let converted = [];
-        hadirData.forEach((item) => {
-          if (item.jam_masuk) {
-            converted.push({
-              id: `${item.tanggal}_${item.jam_masuk}_masuk`,
-              type: "Masuk Kerja",
-              time: item.jam_masuk,
-              date: item.tanggal,
-            });
+          converted = converted.sort((a, b) => {
+            const dateTimeA = new Date(`${a.date}T${a.time}`);
+            const dateTimeB = new Date(`${b.date}T${b.time}`);
+            return dateTimeB - dateTimeA;
+          });
+
+          setRecentAttendance(converted.slice(0, 3));
+
+          // FETCH PIE CHART
+          const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
+          const pieJson = await pieRes.json();
+
+          const getColorByStatus = (label) => {
+            const normalizedLabel = label.toLowerCase();
+            if (
+              normalizedLabel.includes("alfa") ||
+              normalizedLabel.includes("alpa")
+            )
+              return "#F44336";
+            if (normalizedLabel.includes("izin")) return "#FFC107";
+            if (normalizedLabel.includes("hadir")) return "#4CAF50";
+            if (normalizedLabel.includes("sakit")) return "#42A5F5";
+            return "#9E9E9E";
+          };
+
+          const pieData = pieJson.labels.map((label, index) => ({
+            name: label,
+            population: pieJson.data[index],
+            color: getColorByStatus(label),
+            legendFontColor: "#333",
+            legendFontSize: 14,
+          }));
+
+          setChartData(pieData);
+          console.log(pieData);
+
+          // Existing Izin
+          const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
+          const izinJson = await izinRes.json();
+          if (izinJson?.data) {
+            const existingDates = izinJson.data.map((item) => item.tanggal);
+            setDisabledDates(existingDates);
           }
-          if (item.jam_keluar) {
-            converted.push({
-              id: `${item.tanggal}_${item.jam_keluar}_pulang`,
-              type: "Pulang Kerja",
-              time: item.jam_keluar,
-              date: item.tanggal,
-            });
-          }
-        });
-
-        converted = converted.sort((a, b) => {
-          const dateTimeA = new Date(`${a.date}T${a.time}`);
-          const dateTimeB = new Date(`${b.date}T${b.time}`);
-          return dateTimeB - dateTimeA;
-        });
-
-        setRecentAttendance(converted.slice(0, 3));
-
-        // FETCH PIE CHART
-        const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
-        const pieJson = await pieRes.json();
-
-        const getColorByStatus = (label) => {
-          const normalizedLabel = label.toLowerCase();
-          if (normalizedLabel.includes('alfa') || normalizedLabel.includes('alpa')) return "#F44336";
-          if (normalizedLabel.includes('izin')) return "#FFC107";
-          if (normalizedLabel.includes('hadir')) return "#4CAF50";
-          if (normalizedLabel.includes('sakit')) return "#42A5F5";
-          return "#9E9E9E";
-        };
-
-        const pieData = pieJson.labels.map((label, index) => ({
-          name: label,
-          population: pieJson.data[index],
-          color: getColorByStatus(label),
-          legendFontColor: "#333",
-          legendFontSize: 14,
-        }));
-
-        setChartData(pieData);
-        console.log(pieData);
-
-        // Existing Izin
-        const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
-        const izinJson = await izinRes.json();
-        if (izinJson?.data) {
-          const existingDates = izinJson.data.map((item) => item.tanggal);
-          setDisabledDates(existingDates);
+        } catch (err) {
+          console.log("Error fetching attendance history:", err);
         }
+      };
 
-      } catch (err) {
-        console.log("Error fetching attendance history:", err);
-      }
-    };
-
-    fetchAttendanceHistory();
-  }, [currentDateStr])
-);
-
-  useEffect(() => {
-    console.log("Events di FormizinPopup:", events);
-  }, [events]);
+      fetchAttendanceHistory();
+    }, [currentDateStr])
+  );
 
   // Animation + userData update when screen focused
   useFocusEffect(
@@ -178,6 +202,7 @@ useFocusEffect(
         }
       };
 
+      getCurrentTimeString();
       fetchUserData();
 
       if (isInitialMount.current) {
@@ -208,17 +233,30 @@ useFocusEffect(
   );
 
   // Time ticker only (no user data here anymore)
-  useEffect(() => {
+  const getCurrentTimeString = () => {
     const interval = setInterval(() => {
       const now = new Date();
-      const hours = now.getHours();
+      const hours = now.getHours().toString().padStart(2, "0"); // tambahkan padStart
       const minutes = now.getMinutes().toString().padStart(2, "0");
       setCurrentTime(`${hours}:${minutes}`);
       setLoadingTime(false);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  };
+
+  const isTodayHoliday = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const dayOfWeek = new Date().getDay(); // 0 = Minggu, 6 = Sabtu
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isNationalHoliday = holidays.some((item) => {
+      const start = new Date(item.tanggal_mulai);
+      const end = new Date(item.tanggal_selesai);
+      const current = new Date(today);
+      return current >= start && current <= end;
+    });
+    return isNationalHoliday || isWeekend;
+  };
 
   const handleNavigation = (screenName) => {
     Animated.timing(animatedValue, {
@@ -252,38 +290,61 @@ useFocusEffect(
           </View>
         </View>
 
-        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
+        <Animated.View
+          style={[
+            styles.whiteContainer,
+            { transform: [{ translateY: animatedValue }] },
+          ]}
+        >
           <View style={styles.greyLine} />
 
           {/* Time Section */}
           <View style={styles.timeSection}>
             <WithLoader loading={loadingTime}>
               <Text style={styles.time}>{currentTime}</Text>
+              <Text style={styles.timeSubtitle}>
+                {new Date(currentDateStr).toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </Text>
             </WithLoader>
-            <Text style={styles.timeSubtitle}>
-              {new Date(currentDateStr).toLocaleDateString("id-ID", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
           </View>
 
           {/* Action Buttons Section */}
           <View style={styles.actionCard}>
             <TouchableOpacity
-              style={[styles.actionButton, (libur || isTodayDisabled) && styles.disabledButton]}
+              style={[
+                styles.actionButton,
+                isTodayHoliday() && { opacity: 0.5 },
+              ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={libur || isTodayDisabled}>
-              <View style={[styles.actionIconContainer, styles.scanIconContainer]}>
+              disabled={isTodayHoliday()}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  styles.scanIconContainer,
+                  isTodayHoliday() && { opacity: 0.5 },
+                ]}
+              >
                 <Ionicons name="scan" size={24} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton} onPress={() => setShowFormIzin(true)}>
-              <View style={[styles.actionIconContainer, styles.documentIconContainer]}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setShowFormIzin(true)}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  styles.documentIconContainer,
+                ]}
+              >
                 <Ionicons name="document-text-outline" size={24} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>{t("general.izin")}</Text>
@@ -302,7 +363,11 @@ useFocusEffect(
                   <Ionicons name="log-in-outline" size={20} color="#4CAF50" />
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
-                <Text style={styles.attendanceTime}>{todayAttendance.jam_masuk ? todayAttendance.jam_masuk : "-"}</Text>
+                <Text style={styles.attendanceTime}>
+                  {todayAttendance.jam_masuk
+                    ? formatToAMPM(todayAttendance.jam_masuk)
+                    : "-"}
+                </Text>
               </View>
 
               <View style={styles.attendanceDivider} />
@@ -313,7 +378,9 @@ useFocusEffect(
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_keluar ? todayAttendance.jam_keluar : "-"}
+                  {todayAttendance.jam_masuk
+                    ? formatToAMPM(todayAttendance.jam_keluar)
+                    : "-"}
                 </Text>
               </View>
             </View>
@@ -324,7 +391,10 @@ useFocusEffect(
             <View style={styles.cardHeader}>
               <View style={styles.rowBetween}>
                 <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
-                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
+                <TouchableOpacity
+                  onPress={() => handleNavigation("History")}
+                  style={styles.linkContainer}
+                >
                   <Text style={styles.link}>{t("home.lihat")}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
                 </TouchableOpacity>
@@ -334,7 +404,7 @@ useFocusEffect(
             <View style={styles.chartContainer}>
               <PieChart
                 data={chartData}
-                width={screenWidth - 64}
+                width={screenWidth - 40}
                 height={150}
                 chartConfig={{
                   backgroundColor: "#fff",
@@ -344,7 +414,7 @@ useFocusEffect(
                 }}
                 accessor={"population"}
                 backgroundColor={"transparent"}
-                paddingLeft={"15"}
+                paddingLeft={"10"}
                 absolute
               />
             </View>
@@ -357,7 +427,10 @@ useFocusEffect(
               <View style={styles.cardTitleUnderline} />
             </View>
             <View style={styles.calendarContainer}>
-              <CalendarWithHoliday onEventsChange={setEvents} />
+              <CalendarWithHoliday
+                holidays={holidays}
+                onHolidaysChange={setHolidays}
+              />
             </View>
           </View>
         </Animated.View>
@@ -366,7 +439,6 @@ useFocusEffect(
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
-        events={events}
         disabledDates={disabledDates}
       />
     </View>
@@ -552,6 +624,7 @@ export const styles = StyleSheet.create({
   chartContainer: {
     alignItems: "center",
     paddingVertical: 8,
+    overflow: "hidden", // ← Ini penting agar label tidak keluar
   },
   rowBetween: {
     flexDirection: "row",

@@ -59,7 +59,10 @@
     "found": " records found",
     "detail": "Attendance Details",
     "checkIn": "Check In Proof",
-    "checkOut": "Check Out Proof"
+    "checkOut": "Check Out Proof",
+    "telat": "Late to work",
+    "tidakAbsen" : "No Clock-Out"
+
   },
   "notif": {},
   "camera": {
