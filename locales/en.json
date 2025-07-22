@@ -64,6 +64,15 @@
     "tidakAbsen" : "No Clock-Out"
 
   },
+  "filterhistory": {
+    "title": "Filter History",
+    "bulan": "Month",
+    "tahun": "Year",
+    "jenis": "Attendance Type",
+    "btn": "Apply",
+    "cancel": "Cancel"
+
+  },
   "notif": {},
   "camera": {
     "warn": "Attention!",

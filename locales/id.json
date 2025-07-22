@@ -63,6 +63,15 @@
     "telat": "Terlambat",
     "tidakAbsen" : "Tidak Absen Pulang"
   },
+   "filterhistory": {
+    "title": "Filter Riwayat",
+    "bulan": "Bulan",
+    "tahun": "Tahun",
+    "jenis": "Jenis Absensi",
+    "btn": "Terapkan",
+    "cancel": "Batal"
+
+  },
   "notif": {},
   "camera": {
     "warn": "Perhatian!",
@@ -109,5 +118,14 @@
     "october": "Oktober",
     "november": "November",
     "december": "Desember"
+  },
+  "days": {
+    "sunday": "Minggu",
+    "monday": "Senin",
+    "tuesday": "Selasa",
+    "wednesday": "Rabu",
+    "thursday": "Kamis",
+    "friday": "Jumat",
+    "saturday": "Sabtu"
   }
 }
