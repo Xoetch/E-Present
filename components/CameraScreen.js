@@ -66,91 +66,55 @@ export default function CameraScreen() {
     const [h, m, s] = timeStr.split(":").map(Number);
     return h * 3600 + m * 60 + s;
   };
+const fetchUserData = async () => {
+  try {
+    const dataString = await AsyncStorage.getItem("userData");
+    if (!dataString) throw new Error("Data pengguna tidak ditemukan");
 
-  const shiftTimes = {
-    "SFM-OP01": { start: "18:00:00", end: "03:00:00" },
-    "SFP-OP01": { start: "07:00:00", end: "16:00:00" },
-  };
+    const data = JSON.parse(dataString);
+    setUserData(data);
 
-  const fetchUserData = async () => {
-    try {
-      const dataString = await AsyncStorage.getItem("userData");
-      if (dataString) {
-        const data = JSON.parse(dataString);
-        setUserData(data);
-        console.log("Isi userData dari AsyncStorage:", data);
-
-        const now = new Date();
-        const currentInSeconds =
-          now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-        const shift = data.id_shift;
-        const shiftTime = shiftTimes[shift];
-
-        console.log("Shift ID:", shift);
-        console.log("Shift ID:", shiftTime);
-        if (!shiftTime) {
-          Alert.alert("Shift tidak ditemukan", "Shift ID tidak dikenali.");
-          navigation.navigate("MainTabs");
-          return;
-        }
-
-        const [sh, sm, ss] = shiftTime.start.split(":").map(Number);
-        const [eh, em, es] = shiftTime.end.split(":").map(Number);
-
-        const start = sh * 3600 + sm * 60 + ss;
-        const end = eh * 3600 + em * 60 + es;
-
-        console.log("Jam sekarang:", currentInSeconds);
-        console.log("Jam shift:", start, "-", end);
-
-        // Pengecekan apakah user telat
-        const late = currentInSeconds > start;
-        setIsLate(late);
-
-        // Pengecekan apakah sebelum jam pulang
-        const beforeEnd = currentInSeconds < end;
-        setIsBeforeEndShift(beforeEnd);
-
-        let allowed = false;
-        if (start < end) {
-          allowed = currentInSeconds >= start && currentInSeconds <= end;
-        } else {
-          // shift lintas hari
-          allowed = currentInSeconds >= start || currentInSeconds <= end;
-        }
-
-        console.log("Diperbolehkan?", allowed);
-
-        if (!allowed) {
-          Alert.alert(
-            "Akses Ditolak",
-            "Kamera hanya dapat digunakan sesuai jam shift Anda.",
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: "MainTabs" }],
-                  });
-                },
-              },
-            ]
-          );
-        }
-
-        setIsAllowedTime(allowed);
-      }
-    } catch (e) {
-      console.log("Gagal mengambil Shift:", e);
-      Alert.alert("Gagal", "Tidak dapat mengambil data shift pengguna.");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs" }],
-      });
+    const jamShift = data.jam_shift; // Contoh: "14:25 - 14:30"
+    if (!jamShift || !jamShift.includes(" - ")) {
+      throw new Error("Format jam_shift tidak valid");
     }
-  };
+
+    const [jam_masuk, jam_pulang] = jamShift.split(" - ").map(jam => jam.trim() + ":00");
+
+    const now = new Date();
+    const currentInSeconds =
+      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    const [sh, sm, ss] = jam_masuk.split(":").map(Number);
+    const [eh, em, es] = jam_pulang.split(":").map(Number);
+
+    const start = sh * 3600 + sm * 60 + ss;
+    const end = eh * 3600 + em * 60 + es;
+
+    const late = currentInSeconds > start;
+    setIsLate(late);
+
+    const beforeEnd = currentInSeconds < end;
+    setIsBeforeEndShift(beforeEnd);
+
+    let allowed = false;
+    if (start < end) {
+      allowed = currentInSeconds >= start && currentInSeconds <= end;
+    } else {
+      // shift lintas hari
+      allowed = currentInSeconds >= start || currentInSeconds <= end;
+    }
+
+    setIsAllowedTime(allowed);
+  } catch (e) {
+    console.log("Gagal mengambil shift dari userData:", e);
+    Alert.alert("Gagal", "Tidak dapat memproses jam shift pengguna.");
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "MainTabs" }],
+    });
+  }
+};
 
   // Timer realtime jam
   useEffect(() => {
@@ -265,7 +229,7 @@ export default function CameraScreen() {
                 </View>
               )}
 
-              {!hasClockOutToday && isBeforeEndShift && (
+              {hasClockInToday && !hasClockOutToday && isBeforeEndShift && (
                 <View
                   style={[styles.warningCard, { backgroundColor: "#FFF9C4" }]}
                 >
