@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Animated,
@@ -41,7 +41,6 @@ export default function HomeScreen({ navigation }) {
   const [chartData, setChartData] = useState([]);
   const today = new Date().toISOString().split("T")[0];
 
-  const [disabledDates, setDisabledDates] = useState([]);
   const [currentTime, setCurrentTime] = useState("");
   const [showFormIzin, setShowFormIzin] = useState(false);
   const [holidays, setHolidays] = useState([]);
@@ -50,15 +49,14 @@ export default function HomeScreen({ navigation }) {
     id_pengguna: null,
     nama_lengkap: "",
     alamat_lengkap: "",
-    jam_shift: "",
+    shift_mulai: "",
+    shift_selesai: "",
     foto_pengguna: "",
   });
 
   const animatedValue = useRef(new Animated.Value(screenHeight)).current;
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
-
-  const [recentAttendance, setRecentAttendance] = useState([]);
 
   const formatToAMPM = (time24) => {
     if (!time24) return "-";
@@ -79,108 +77,6 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, [currentDateStr]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchAttendanceHistory = async () => {
-        try {
-          const userDataStr = await AsyncStorage.getItem("userData");
-          const userData = JSON.parse(userDataStr);
-          const userId = userData?.id_pengguna;
-
-          if (!userId) return;
-
-          const response = await fetch(`${API.HISTORY}/${userId}`);
-          const result = await response.json();
-
-          if (!result?.data) return;
-
-          const hadirData = result.data.filter(
-            (item) => item.status_kehadiran === "Hadir"
-          );
-
-          const todayEntry = result.data.find((item) => item.tanggal === today);
-
-          if (todayEntry) {
-            setTodayAttendance({
-              jam_masuk: todayEntry.jam_masuk || null,
-              jam_keluar: todayEntry.jam_keluar || null,
-            });
-          } else {
-            setTodayAttendance({ jam_masuk: null, jam_keluar: null });
-          }
-
-          let converted = [];
-          hadirData.forEach((item) => {
-            if (item.jam_masuk) {
-              converted.push({
-                id: `${item.tanggal}_${item.jam_masuk}_masuk`,
-                type: "Masuk Kerja",
-                time: item.jam_masuk,
-                date: item.tanggal,
-              });
-            }
-            if (item.jam_keluar) {
-              converted.push({
-                id: `${item.tanggal}_${item.jam_keluar}_pulang`,
-                type: "Pulang Kerja",
-                time: item.jam_keluar,
-                date: item.tanggal,
-              });
-            }
-          });
-
-          converted = converted.sort((a, b) => {
-            const dateTimeA = new Date(`${a.date}T${a.time}`);
-            const dateTimeB = new Date(`${b.date}T${b.time}`);
-            return dateTimeB - dateTimeA;
-          });
-
-          setRecentAttendance(converted.slice(0, 3));
-
-          // FETCH PIE CHART
-          const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
-          const pieJson = await pieRes.json();
-
-          const getColorByStatus = (label) => {
-            const normalizedLabel = label.toLowerCase();
-            if (
-              normalizedLabel.includes("alfa") ||
-              normalizedLabel.includes("alpa")
-            )
-              return "#F44336";
-            if (normalizedLabel.includes("izin")) return "#FFC107";
-            if (normalizedLabel.includes("hadir")) return "#4CAF50";
-            if (normalizedLabel.includes("sakit")) return "#42A5F5";
-            return "#9E9E9E";
-          };
-
-          const pieData = pieJson.labels.map((label, index) => ({
-            name: label,
-            population: pieJson.data[index],
-            color: getColorByStatus(label),
-            legendFontColor: "#333",
-            legendFontSize: 14,
-          }));
-
-          setChartData(pieData);
-          console.log(pieData);
-
-          // Existing Izin
-          const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
-          const izinJson = await izinRes.json();
-          if (izinJson?.data) {
-            const existingDates = izinJson.data.map((item) => item.tanggal);
-            setDisabledDates(existingDates);
-          }
-        } catch (err) {
-          console.log("Error fetching attendance history:", err);
-        }
-      };
-
-      fetchAttendanceHistory();
-    }, [currentDateStr])
-  );
-
   // Animation + userData update when screen focused
   useFocusEffect(
     useCallback(() => {
@@ -189,13 +85,15 @@ export default function HomeScreen({ navigation }) {
           const dataString = await AsyncStorage.getItem("userData");
           if (dataString) {
             const data = JSON.parse(dataString);
-            setUserData({
-              id_pengguna: data.id_pengguna || null,
-              nama_lengkap: data.nama_lengkap || "",
-              alamat_lengkap: data.alamat_lengkap || "",
-              jam_shift: data.jam_shift || "",
-              foto_pengguna: data.foto_pengguna || "",
-            });
+            const [shift_mulai, shift_selesai] = (data.jam_shift || "").split(" - ");
+              setUserData({
+                id_pengguna: data.id_pengguna || null,
+                nama_lengkap: data.nama_lengkap || "",
+                alamat_lengkap: data.alamat_lengkap || "",
+                shift_mulai: shift_mulai || "",
+                shift_selesai: shift_selesai || "",
+                foto_pengguna: data.foto_pengguna || "",
+              });
           }
         } catch (e) {
           console.log("Failed to get userData:", e);
@@ -204,6 +102,8 @@ export default function HomeScreen({ navigation }) {
 
       getCurrentTimeString();
       fetchUserData();
+
+
 
       if (isInitialMount.current) {
         setTimeout(() => {
@@ -232,6 +132,67 @@ export default function HomeScreen({ navigation }) {
     }, [animatedValue])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAttendanceHistory = async () => {
+        try {
+          const userId = userData?.id_pengguna;
+
+          if (!userId) return;
+
+          const response = await fetch(`${API.HISTORY}/${userId}`);
+          const result = await response.json();
+
+          if (!result?.data) return;
+
+          const todayEntry = result.data.find((item) => item.tanggal === today);
+
+          if (todayEntry) {
+            setTodayAttendance({
+              jam_masuk: todayEntry.jam_masuk || null,
+              jam_keluar: todayEntry.jam_keluar || null,
+            });
+          } else {
+            setTodayAttendance({ jam_masuk: null, jam_keluar: null });
+          }
+
+          // FETCH PIE CHART
+          const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
+          const pieJson = await pieRes.json();
+
+          const getColorByStatus = (label) => {
+            const normalizedLabel = label.toLowerCase();
+            if (
+              normalizedLabel.includes("alfa") ||
+              normalizedLabel.includes("alpa")
+            )
+              return "#F44336";
+            if (normalizedLabel.includes("izin")) return "#FFC107";
+            if (normalizedLabel.includes("hadir")) return "#4CAF50";
+            if (normalizedLabel.includes("sakit")) return "#42A5F5";
+            return "#9E9E9E";
+          };
+
+          const pieData = pieJson.labels.map((label, index) => ({
+            name: label,
+            population: pieJson.data[index],
+            color: getColorByStatus(label),
+            legendFontColor: "#333",
+            legendFontSize: 14,
+          }));
+
+          setChartData(pieData);
+          console.log(pieData);
+        } catch (err) {
+          console.log("Error fetching attendance history:", err);
+        }
+      };
+
+      fetchAttendanceHistory();
+    }, [currentDateStr])
+  );
+
+
   // Time ticker only (no user data here anymore)
   const getCurrentTimeString = () => {
     const interval = setInterval(() => {
@@ -245,7 +206,7 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   };
 
-  const isTodayHoliday = () => {
+  const isTodayHoliday = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
     const dayOfWeek = new Date().getDay(); // 0 = Minggu, 6 = Sabtu
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -256,7 +217,24 @@ export default function HomeScreen({ navigation }) {
       return current >= start && current <= end;
     });
     return isNationalHoliday || isWeekend;
-  };
+  }, [holidays, currentDateStr]);
+
+  const isAbsenDisabled = useMemo(() => {
+    if (userData.shift_selesai) {
+      const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
+      const now = new Date();
+      const batasAbsen = new Date(now);
+      
+      if (todayAttendance.jam_masuk == null) {
+        batasAbsen.setHours(endHour, endMinute, 0, 0);
+        return now >= batasAbsen;
+      }
+      batasAbsen.setHours(endHour + 1, endMinute, 0, 0); // shift_selesai + 1 jam
+      return now >= batasAbsen;
+    }
+    return false;
+  }, [userData.shift_selesai, todayAttendance.jam_masuk, currentDateStr]);
+
 
   const handleNavigation = (screenName) => {
     Animated.timing(animatedValue, {
@@ -318,16 +296,15 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                isTodayHoliday() && { opacity: 0.5 },
+                (isTodayHoliday || isAbsenDisabled) && { opacity: 0.5 },
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isTodayHoliday()}
+              disabled={isTodayHoliday || isAbsenDisabled}
             >
               <View
                 style={[
                   styles.actionIconContainer,
-                  styles.scanIconContainer,
-                  isTodayHoliday() && { opacity: 0.5 },
+                  styles.scanIconContainer
                 ]}
               >
                 <Ionicons name="scan" size={24} color="#fff" />
@@ -439,7 +416,6 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
-        disabledDates={disabledDates}
       />
     </View>
   );

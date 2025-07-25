@@ -113,13 +113,8 @@ export default function CameraScreen() {
         setIsBeforeEndShift(beforeEnd);
 
         let allowed = false;
-        if (start < end) {
-          allowed = currentInSeconds >= start && currentInSeconds <= end;
-        } else {
-          // shift lintas hari
-          allowed = currentInSeconds >= start || currentInSeconds <= end;
-        }
-
+        allowed = currentInSeconds >= start && currentInSeconds <= end;
+        
         console.log("Diperbolehkan?", allowed);
 
         if (!allowed) {

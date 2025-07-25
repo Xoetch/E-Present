@@ -23,9 +23,7 @@ const { height } = Dimensions.get("window");
 
 export default function FormizinPopup({
   visible,
-  onClose,
-  events,
-  disabledDates,
+  onClose
 }) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -63,17 +61,6 @@ export default function FormizinPopup({
   const handleClose = () => {
     resetForm();
     onClose();
-  };
-
-  const isHariLibur = (date) => {
-    const ymd = date.toISOString().slice(0, 10);
-    const isEventHoliday =
-      Array.isArray(events) &&
-      events.some((event) => event.start?.date === ymd);
-    const day = date.getDay();
-    const isWeekend = day === 0 || day === 6;
-    const isDisabled = disabledDates.includes(ymd);
-    return isEventHoliday || isWeekend || isDisabled;
   };
 
   const pickImage = async () => {
