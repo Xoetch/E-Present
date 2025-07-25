@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import Modal from "react-native-modal";
 import API from "../utils/ApiConfig";
+import * as DocumentPicker from "expo-document-picker";
 
 const { height } = Dimensions.get("window");
 
@@ -39,6 +40,7 @@ export default function FormizinPopup({
   const [keterangan, setKeterangan] = useState("");
   const [open, setOpen] = useState(false);
   const { t, i18n } = useTranslation();
+  const [document, setDocument] = useState(null);
 
   const [items, setItems] = useState([]);
   const [image, setImage] = useState(null);
@@ -50,7 +52,7 @@ export default function FormizinPopup({
     setShowEndPicker(false);
     setJenis(null);
     setOpen(false);
-    setImage(null);
+    setDocument(null);
     setKeterangan("");
     setJamStart(new Date());
     setJamKhir(new Date());
@@ -63,16 +65,30 @@ export default function FormizinPopup({
     onClose();
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+
+      // Validasi ukuran file max 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        Alert.alert(
+          "Ukuran file terlalu besar",
+          "Maksimal ukuran file adalah 5MB"
+        );
+        return;
+      }
+
+      setDocument(file); // Simpan file ke state
+    } catch (err) {
+      Alert.alert("Gagal", "Gagal memilih dokumen PDF.");
     }
   };
 
@@ -138,8 +154,8 @@ export default function FormizinPopup({
   };
 
   const submitIzin = async () => {
-    if (!startDate || !endDate || !jenis || !image) {
-      Alert.alert("Error", "Semua field wajib diisi dan foto harus diambil");
+    if (!startDate || !endDate || !jenis || !document) {
+      Alert.alert("Error", "Semua field wajib diisi dan Pdf harus diambil");
       return;
     }
     console.log("Jenis izin yang dipilih:", jenis);
@@ -172,9 +188,9 @@ export default function FormizinPopup({
 
     const formData = new FormData();
     formData.append("file", {
-      uri: image,
-      name: "bukti_izin.jpg",
-      type: "image/jpeg",
+      uri: document.uri,
+      name: document.name,
+      type: "application/pdf",
     });
 
     let endpoint = "";
@@ -332,18 +348,16 @@ export default function FormizinPopup({
                 <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
                 <TouchableOpacity
                   style={styles.imageUploadContainer}
-                  onPress={pickImage}
+                  onPress={pickDocument}
                 >
-                  {image ? (
-                    <View style={styles.imagePreviewContainer}>
-                      <Image
-                        source={{ uri: image }}
-                        style={styles.imagePreview}
+                  {document ? (
+                    <View style={styles.pdfPreviewContainer}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={24}
+                        color="#2E7BE8"
                       />
-                      <View style={styles.imageOverlay}>
-                        <Ionicons name="camera" size={24} color="#fff" />
-                        <Text style={styles.changeImageText}>Change Photo</Text>
-                      </View>
+                      <Text style={styles.fileNameText}>{document.name}</Text>
                     </View>
                   ) : (
                     <View style={styles.uploadPlaceholder}>
@@ -354,9 +368,9 @@ export default function FormizinPopup({
                           color="#2E7BE8"
                         />
                       </View>
-                      <Text style={styles.uploadText}>{t("form.img")}</Text>
+                      <Text style={styles.uploadText}>Upload PDF</Text>
                       <Text style={styles.uploadSubtext}>
-                        Tap to select document
+                        Tap to select PDF file (max 5MB)
                       </Text>
                     </View>
                   )}
@@ -427,18 +441,16 @@ export default function FormizinPopup({
                 <Text style={styles.sectionTitle}>{t("form.bukti")}</Text>
                 <TouchableOpacity
                   style={styles.imageUploadContainer}
-                  onPress={pickImage}
+                  onPress={pickDocument}
                 >
-                  {image ? (
-                    <View style={styles.imagePreviewContainer}>
-                      <Image
-                        source={{ uri: image }}
-                        style={styles.imagePreview}
+                  {document ? (
+                    <View style={styles.pdfPreviewContainer}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={24}
+                        color="#2E7BE8"
                       />
-                      <View style={styles.imageOverlay}>
-                        <Ionicons name="camera" size={24} color="#fff" />
-                        <Text style={styles.changeImageText}>Change Photo</Text>
-                      </View>
+                      <Text style={styles.fileNameText}>{document.name}</Text>
                     </View>
                   ) : (
                     <View style={styles.uploadPlaceholder}>
@@ -449,9 +461,9 @@ export default function FormizinPopup({
                           color="#2E7BE8"
                         />
                       </View>
-                      <Text style={styles.uploadText}>{t("form.img")}</Text>
+                      <Text style={styles.uploadText}>Upload PDF</Text>
                       <Text style={styles.uploadSubtext}>
-                        Tap to select document
+                        {t("form.pdf")}
                       </Text>
                     </View>
                   )}
@@ -640,30 +652,20 @@ export const styles = StyleSheet.create({
     borderColor: "#E5E5EA",
     borderStyle: "dashed",
   },
-  imagePreviewContainer: {
-    position: "relative",
-    height: 200,
-  },
-  imagePreview: {
-    width: "100%",
-    height: "100%",
-  },
-  imageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  changeImageText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  pdfPreviewContainer: {
+  alignItems: "center",
+  padding: 10,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  backgroundColor: "#f8f8f8",
+},
+fileNameText: {
+  marginTop: 8,
+  fontSize: 16,
+  color: "#333",
+},
+
   uploadPlaceholder: {
     alignItems: "center",
     justifyContent: "center",
