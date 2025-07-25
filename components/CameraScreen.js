@@ -73,7 +73,7 @@ export default function CameraScreen() {
       const data = JSON.parse(dataString);
       setUserData(data);
 
-      const jamShift = data.jam_shift; // Contoh: "14:25 - 14:30"
+      const jamShift = data.jam_shift; 
       if (!jamShift || !jamShift.includes(" - ")) {
         throw new Error("Format jam_shift tidak valid");
       }
