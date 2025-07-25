@@ -15,8 +15,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
+  Alert,
 } from "react-native";
 import Modal from "react-native-modal";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import * as IntentLauncher from "expo-intent-launcher";
 
 import API from "../utils/ApiConfig";
 const { width } = Dimensions.get("window");
@@ -208,6 +213,46 @@ export default function HistoryScreen() {
     ],
     [t]
   );
+
+  const downloadPDF = async (url, filename = "bukti_izin.pdf") => {
+    try {
+      const fileUri = FileSystem.documentDirectory + "bukti_izin.pdf";
+
+      console.log("🔗 URL PDF:", url);
+      // Download file
+      const res = await FileSystem.downloadAsync(url, fileUri);
+
+      if (res.status !== 200) {
+        Alert.alert("Gagal", `Download gagal dengan status: ${res.status}`);
+        return;
+      }
+
+      // Cek ukuran file
+      const fileInfo = await FileSystem.getInfoAsync(res.uri);
+      if (fileInfo.size === 0) {
+        Alert.alert(
+          "Gagal",
+          "File PDF kosong (0 KB). URL tidak valid atau gagal diunduh."
+        );
+        return;
+      }
+
+      console.log("✅ PDF berhasil diunduh:", res.uri, fileInfo);
+
+      // Pastikan perangkat bisa sharing
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        Alert.alert("Error", "Fitur sharing tidak tersedia di perangkat ini.");
+        return;
+      }
+
+      // Share file
+      await Sharing.shareAsync(res.uri);
+    } catch (error) {
+      console.error("❌ Gagal membuka PDF:", error);
+      Alert.alert("Gagal", `Gagal membuka PDF: ${error.message}`);
+    }
+  };
 
   // Memoized filtered data
   const filteredData = useMemo(() => {
@@ -497,10 +542,14 @@ export default function HistoryScreen() {
               style={styles.cancelButton}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.cancelButtonText}>{t("filterhistory.cancel")}</Text>
+              <Text style={styles.cancelButtonText}>
+                {t("filterhistory.cancel")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton} onPress={applyFilter}>
-              <Text style={styles.applyButtonText}>{t("filterhistory.btn")}</Text>
+              <Text style={styles.applyButtonText}>
+                {t("filterhistory.btn")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -650,17 +699,42 @@ export default function HistoryScreen() {
                   )}
 
                 {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
-                  <>
-                    <Image
-                      source={{ uri: selectedItem.bukti_izin }}
-                      style={styles.photo}
-                      resizeMode="contain"
+                  <View
+                    style={{ alignItems: "center", marginTop: 24, padding: 16 }}
+                  >
+                    <Ionicons
+                      name="document-text-outline"
+                      size={80}
+                      color="#FF9500"
                     />
-                    {/* <View style={styles.detailsCard}>
-                        <Text style={styles.detailStatus}>{t}</Text>
-                        <Text style={styles.detailDate}>{selectedItem.tanggal}</Text>
-                      </View> */}
-                  </>
+
+
+                    <TouchableOpacity
+                      onPress={() => downloadPDF(selectedItem?.bukti_izin)}
+                      style={{
+                        marginTop: 16,
+                        backgroundColor: "#FF9500",
+                        paddingHorizontal: 24,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 3,
+                        elevation: 5,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "white",
+                          fontWeight: "600",
+                          fontSize: 16,
+                        }}
+                      >
+                        Download {t("form.bukti")}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             )}
