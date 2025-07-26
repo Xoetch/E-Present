@@ -13,7 +13,9 @@
     "semua": "All",
     "yes": "Yes",
     "no": "No",
-    "repeat": "Try Again"
+    "repeat": "Try Again",
+    "lain": "Others",
+    "hari": "day"
   },
   "home": {
     "statistik": "Attendance This Month",
@@ -43,7 +45,8 @@
     "eng": "English",
     "ind": "Indonesian",
     "logout": "Logout",
-    "Konfirmasi": "Are you sure you want to logout?",
+    "Konfirmasi": "Log Out Confirmation",
+    "logoutConfirmMessage": "Are you sure you want to log out of this account?",
     "info": "User Information"
   },
   "history": {
@@ -61,8 +64,17 @@
     "checkIn": "Check In Proof",
     "checkOut": "Check Out Proof",
     "telat": "Late to work",
-    "tidakAbsen" : "No Clock-Out"
-
+    "tidakAbsen": "No Clock-Out",
+    "masuk": "In",
+    "pulang": "Out",
+    "izinFull": "Long Permission",
+    "izinPart": "Partial Time Permission",
+    "statusIzin": "Permission Status",
+    "waiting": "Pending Approval",
+    "diterima": "Permission Approved",
+    "ditolak": "Permission Denied",
+    "keterangan": "Permission Notes",
+    "noProof": "No attendance proof available"
   },
   "filterhistory": {
     "title": "Filter History",
@@ -71,7 +83,6 @@
     "jenis": "Attendance Type",
     "btn": "Apply",
     "cancel": "Cancel"
-
   },
   "notif": {},
   "camera": {

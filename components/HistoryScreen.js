@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   Platform,
@@ -31,38 +30,161 @@ const FILTER_ALL = "All";
 const YEAR_RANGE_START = 2020;
 const YEAR_RANGE_LENGTH = 10;
 
-// Enhanced status configurations with gradients
-const STATUS_CONFIG = {
-  Hadir: {
-    icon: "checkmark-circle",
-    colors: ["#4CAF50", "#66BB6A"],
-    lightColor: "#E8F5E8",
-    textColor: "#2E7D32",
-  },
-  Izin: {
-    icon: "briefcase",
-    colors: ["#FFC107", "#FFD54F"],
-    lightColor: "#FFF8E1",
-    textColor: "#F57F17",
-  },
-  Alpa: {
-    icon: "close-circle",
-    colors: ["#F44336", "#EF5350"],
-    lightColor: "#FFEBEE",
-    textColor: "#C62828",
-  },
-  Terlambat: {
-    icon: "close-circle",
-    colors: ["#F44336", "#EF5350"],
-    lightColor: "#FFEBEE",
-    textColor: "#C62828",
-  },
-  Lainnya: {
-    icon: "close-circle",
-    colors: ["#F44336", "#EF5350"],
-    lightColor: "#FFEBEE",
-    textColor: "#C62828",
-  },
+// Localization and color mapping functions (same as HomeScreen)
+const mapLabelToTranslationKey = (apiLabel, jenisIzin) => {
+  const normalizedLabel = apiLabel.toLowerCase();
+  if (normalizedLabel.includes("alfa") || normalizedLabel.includes("alpa")) return "general.alfa";
+  if (normalizedLabel.includes("terlambat")) return "history.telat";
+  if (normalizedLabel.includes("tidak absen pulang")) return "history.tidakAbsen";
+  if (normalizedLabel.includes("izin")) {
+    // Check if it's full day leave
+    if (jenisIzin === "FULL") return "history.izinFull";
+    else if (jenisIzin === "PART") return "history.izinPart";
+    return "general.izin";
+  }
+  if (normalizedLabel.includes("hadir")) return "general.hadir";
+  return "general.lain";
+};
+
+const getColorByStatus = (translationKey) => {
+  switch (translationKey) {
+    case "general.alfa":
+      return "#F44336";
+    case "history.telat":
+      return "#FF7043";
+    case "history.tidakAbsen":
+      return "#FF8A65";
+    case "general.izin":
+    case "history.izinPart":
+    case "history.izinFull":
+      return "#FFC107";
+    case "general.hadir":
+      return "#4CAF50";
+    default:
+      return "#9E9E9E";
+  }
+};
+
+// Enhanced status configurations with localized mapping
+const getStatusConfig = (apiLabel, t, jenisIzin) => {
+  const translationKey = mapLabelToTranslationKey(apiLabel, jenisIzin);
+  const primaryColor = getColorByStatus(translationKey);
+
+  // Generate lighter color for background
+  const lightColor = primaryColor + "20"; // Add transparency
+
+  // Icon mapping based on translation key
+  const getIcon = (key) => {
+    switch (key) {
+      case "general.hadir":
+        return "checkmark-circle";
+      case "general.izin":
+      case "history.izinPart":
+      case "history.izinFull":
+        return "briefcase";
+      case "general.alfa":
+        return "close-circle";
+      case "history.telat":
+        return "time-outline";
+      case "history.tidakAbsen":
+        return "log-out-outline";
+      default:
+        return "help-circle";
+    }
+  };
+
+  return {
+    icon: getIcon(translationKey),
+    primaryColor,
+    lightColor,
+    textColor: primaryColor,
+    translatedLabel: t(translationKey),
+    translationKey,
+  };
+};
+
+// Function to get izin status text and color
+const getIzinStatusConfig = (statusIzin, t) => {
+  switch (statusIzin) {
+    case 0:
+      return {
+        text: t("history.waiting"),
+        color: "#FF9500",
+        backgroundColor: "#FFF3E0",
+        icon: "time-outline"
+      };
+    case -1:
+      return {
+        text: t("history.ditolak"),
+        color: "#FF3B30",
+        backgroundColor: "#FFEBEE",
+        icon: "close-circle"
+      };
+    case 1:
+      return {
+        text: t("history.diterima"),
+        color: "#34C759",
+        backgroundColor: "#E8F5E8",
+        icon: "checkmark-circle"
+      };
+    default:
+      return {
+        text: t("history.statusTidakDiketahui"),
+        color: "#8E8E93",
+        backgroundColor: "#F2F2F7",
+        icon: "help-circle"
+      };
+  }
+};
+
+// Function to determine what proof buttons to show based on attendance status and available data
+const getProofButtonsConfig = (item) => {
+  if (!item || !item.status_kehadiran) return { showCheckIn: false, showCheckOut: false, showLeave: false };
+
+  const statusLower = item.status_kehadiran.toLowerCase();
+  const isIzin = statusLower.includes("izin");
+  const isAlfa = statusLower.includes("alfa") || statusLower.includes("alpa");
+  const isTidakAbsenPulang = statusLower.includes("tidak absen pulang");
+  const isFullLeave = item.jenis_izin === "FULL";
+
+  // Alfa - no proof needed since they didn't come to work at all
+  if (isAlfa) {
+    return { showCheckIn: false, showCheckOut: false, showLeave: false };
+  }
+
+  // Full day leave - only show leave proof
+  if (isIzin && isFullLeave) {
+    return { 
+      showCheckIn: false, 
+      showCheckOut: false, 
+      showLeave: true 
+    };
+  }
+
+  // Partial leave - show both attendance and leave proof
+  if (isIzin && !isFullLeave) {
+    return { 
+      showCheckIn: !!item.bukti_kehadiran, 
+      showCheckOut: !!item.bukti_kehadiran2, 
+      showLeave: true 
+    };
+  }
+
+  // Tidak absen pulang - only show check in proof, no check out
+  if (isTidakAbsenPulang) {
+    return { 
+      showCheckIn: !!item.bukti_kehadiran, 
+      showCheckOut: false, 
+      showLeave: false 
+    };
+  }
+
+  // Regular attendance (hadir, terlambat) - show available attendance proofs
+  return { 
+    showCheckIn: !!item.bukti_kehadiran, 
+    showCheckOut: !!item.bukti_kehadiran2, 
+    showLeave: false 
+  };
 };
 
 // Custom hook for user data
@@ -113,6 +235,7 @@ const useHistoryData = (userId) => {
       }
 
       const result = await response.json();
+      console.log("Fetched history data:", result);
 
       // Safely handle the response structure
       const data = result?.data || result || [];
@@ -145,15 +268,6 @@ const formatTime = (timeStr) => {
   return timeStr;
 };
 
-const getBaseStatus = (status) => {
-  if (!status) return "Lainnya";
-  if (status.startsWith("Izin")) return "Izin";
-  if (status === "Hadir") return "Hadir";
-  if (status === "Alpa") return "Alpa";
-
-  return "Lainnya";
-};
-
 const isValidDate = (dateStr) => {
   if (!dateStr) return false;
   const date = new Date(dateStr);
@@ -168,20 +282,11 @@ export default function HistoryScreen() {
   const { userId, loading: userLoading, error: userError } = useUserData();
 
   // Get history data
-  const {
-    historyData,
-    loading: historyLoading,
-    error: historyError,
-    refetch,
-  } = useHistoryData(userId);
+  const { historyData, loading: historyLoading, error: historyError, refetch } = useHistoryData(userId);
 
   // Filter states
-  const [selectedMonth, setSelectedMonth] = useState(
-    currentDate.getMonth().toString()
-  );
-  const [selectedYear, setSelectedYear] = useState(
-    currentDate.getFullYear().toString()
-  );
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedType, setSelectedType] = useState(FILTER_ALL);
 
   // Temporary filter states for modal
@@ -274,16 +379,14 @@ export default function HistoryScreen() {
       const itemDate = new Date(item.tanggal);
 
       // Apply filters
-      const matchMonth =
-        selectedMonth === FILTER_ALL ||
-        itemDate.getMonth() === parseInt(selectedMonth);
+      const matchMonth = selectedMonth === FILTER_ALL || itemDate.getMonth() === parseInt(selectedMonth);
 
-      const matchYear =
-        selectedYear === FILTER_ALL ||
-        itemDate.getFullYear() === parseInt(selectedYear);
+      const matchYear = selectedYear === FILTER_ALL || itemDate.getFullYear() === parseInt(selectedYear);
 
-      const matchType =
-        selectedType === FILTER_ALL || item.status_kehadiran === selectedType;
+      // For type filter, check if it's any type of izin
+      const matchType = selectedType === FILTER_ALL || 
+        item.status_kehadiran === selectedType ||
+        (selectedType === "Izin" && item.status_kehadiran?.toLowerCase().includes("izin"));
 
       return matchMonth && matchYear && matchType;
     });
@@ -324,38 +427,31 @@ export default function HistoryScreen() {
     setModalVisible(true);
   }, [selectedMonth, selectedYear, selectedType]);
 
-  // Render item component with enhanced design
+  // Render item component with enhanced design and localization
   const renderItem = useCallback(
     ({ item }) => {
       if (!item || !item.status_kehadiran) return null;
 
-      const baseStatus = getBaseStatus(item.status_kehadiran);
-      const { icon, colors, lightColor, textColor } = STATUS_CONFIG[baseStatus];
-      console.log("Item:", item);
+      // Get localized status configuration
+      const statusConfig = getStatusConfig(item.status_kehadiran, t, item.jenis_izin);
+      const { icon, primaryColor, lightColor, textColor, translatedLabel } = statusConfig;
+
       return (
-        <TouchableOpacity
-          onPress={() => handleItemPress(item)}
-          style={styles.itemContainer}
-        >
-          <View
-            style={[styles.statusIndicator, { backgroundColor: lightColor }]}
-          >
-            <View
-              style={[styles.iconContainer, { backgroundColor: colors[0] }]}
-            >
+        <TouchableOpacity onPress={() => handleItemPress(item)} style={styles.itemContainer}>
+          <View style={[styles.statusIndicator, { backgroundColor: lightColor }]}>
+            <View style={[styles.iconContainer, { backgroundColor: primaryColor }]}>
               <Ionicons name={icon} size={24} color="#fff" />
             </View>
           </View>
 
           <View style={styles.contentSection}>
-            <View style={styles.headerRow}>
-              <Text style={[styles.statusText, { color: textColor }]}>
-                {item.status_kehadiran}
-              </Text>
-              <View
-                style={[styles.statusBadge, { backgroundColor: lightColor }]}
-              >
-                <Text style={[styles.badgeText, { color: textColor }]}>
+            <View style={styles.statusRow}>
+              <Text style={[styles.statusText, { color: textColor }]}>{translatedLabel}</Text>
+            </View>
+
+            <View style={styles.shiftRow}>
+              <View style={[styles.statusBadge, { backgroundColor: lightColor }]}>
+                <Text style={[styles.badgeText, { color: textColor }]} numberOfLines={1}>
                   {item.shift_kerja}
                 </Text>
               </View>
@@ -369,20 +465,16 @@ export default function HistoryScreen() {
             <View style={styles.timeRow}>
               <View style={styles.timeItem}>
                 <Ionicons name="log-in-outline" size={14} color="#34C759" />
-                <Text style={styles.timeLabel}>Masuk</Text>
-                <Text style={[styles.timeValue, { color: "#34C759" }]}>
-                  {formatTime(item.jam_masuk)}
-                </Text>
+                <Text style={styles.timeLabel}>{t("history.masuk")}</Text>
+                <Text style={[styles.timeValue, { color: "#34C759" }]}>{formatTime(item.jam_masuk)}</Text>
               </View>
 
               <View style={styles.timeSeparator} />
 
               <View style={styles.timeItem}>
                 <Ionicons name="log-out-outline" size={14} color="#FF3B30" />
-                <Text style={styles.timeLabel}>Keluar</Text>
-                <Text style={[styles.timeValue, { color: "#FF3B30" }]}>
-                  {formatTime(item.jam_keluar)}
-                </Text>
+                <Text style={styles.timeLabel}>{t("history.pulang")}</Text>
+                <Text style={[styles.timeValue, { color: "#FF3B30" }]}>{formatTime(item.jam_keluar)}</Text>
               </View>
             </View>
           </View>
@@ -393,7 +485,7 @@ export default function HistoryScreen() {
         </TouchableOpacity>
       );
     },
-    [handleItemPress]
+    [handleItemPress, t]
   );
 
   // Loading state
@@ -437,10 +529,7 @@ export default function HistoryScreen() {
           </View>
 
           <View style={styles.filterSection}>
-            <TouchableOpacity
-              style={styles.filterCard}
-              onPress={openFilterModal}
-            >
+            <TouchableOpacity style={styles.filterCard} onPress={openFilterModal}>
               <Ionicons name="calendar-outline" size={18} color="#007AFF" />
               <Text style={styles.filterText}>{getMonthYearLabel()}</Text>
               <Ionicons name="chevron-down" size={16} color="#007AFF" />
@@ -451,15 +540,14 @@ export default function HistoryScreen() {
 
       {/* Enhanced Filter Modal */}
       <Modal
-        isVisible={modalVisible} // Ganti: jangan pakai `visible`
+        isVisible={modalVisible}
         animationIn="slideInUp"
         animationOut="slideOutDown"
         backdropOpacity={0.5}
         backdropTransitionInTiming={700}
         backdropTransitionOutTiming={300}
-        onBackdropPress={() => setModalVisible(false)} // penting!
-        style={{ margin: 0, justifyContent: "flex-end" }} // modal dari bawah
-      >
+        onBackdropPress={() => setModalVisible(false)}
+        style={{ margin: 0, justifyContent: "flex-end" }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t("filterhistory.title")}</Text>
@@ -468,25 +556,14 @@ export default function HistoryScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.modalContent}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>{t("history.bulan")}</Text>
               <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={tempMonth}
-                  onValueChange={setTempMonth}
-                  style={styles.picker}
-                >
+                <Picker selectedValue={tempMonth} onValueChange={setTempMonth} style={styles.picker}>
                   <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
                   {months.map((month, index) => (
-                    <Picker.Item
-                      key={index}
-                      label={month}
-                      value={index.toString()}
-                    />
+                    <Picker.Item key={index} label={month} value={index.toString()} />
                   ))}
                 </Picker>
               </View>
@@ -495,21 +572,11 @@ export default function HistoryScreen() {
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>{t("history.tahun")}</Text>
               <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={tempYear}
-                  onValueChange={setTempYear}
-                  style={styles.picker}
-                >
+                <Picker selectedValue={tempYear} onValueChange={setTempYear} style={styles.picker}>
                   <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
                   {Array.from({ length: YEAR_RANGE_LENGTH }, (_, i) => {
                     const year = YEAR_RANGE_START + i;
-                    return (
-                      <Picker.Item
-                        key={year}
-                        label={year.toString()}
-                        value={year.toString()}
-                      />
-                    );
+                    return <Picker.Item key={year} label={year.toString()} value={year.toString()} />;
                   })}
                 </Picker>
               </View>
@@ -518,19 +585,12 @@ export default function HistoryScreen() {
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>{t("history.jenis")}</Text>
               <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={tempType}
-                  onValueChange={setTempType}
-                  style={styles.picker}
-                >
+                <Picker selectedValue={tempType} onValueChange={setTempType} style={styles.picker}>
                   <Picker.Item label={t("general.semua")} value={FILTER_ALL} />
                   <Picker.Item label={t("general.hadir")} value="Hadir" />
                   <Picker.Item label={t("general.izin")} value="Izin" />
                   <Picker.Item label={t("general.alfa")} value="Alpa" />
-                  <Picker.Item
-                    label={t("history.tidakAbsen")}
-                    value="Tidak absen pulang"
-                  />
+                  <Picker.Item label={t("history.tidakAbsen")} value="Tidak absen pulang" />
                   <Picker.Item label={t("history.telat")} value="Terlambat" />
                 </Picker>
               </View>
@@ -563,9 +623,8 @@ export default function HistoryScreen() {
         backdropOpacity={0.5}
         backdropTransitionInTiming={700}
         backdropTransitionOutTiming={300}
-        onBackdropPress={() => setPhotoModalVisible(false)} // close modal on background press
-        style={{ margin: 0, justifyContent: "flex-end" }} // biar modal dari bawah
-      >
+        onBackdropPress={() => setPhotoModalVisible(false)}
+        style={{ margin: 0, justifyContent: "flex-end" }}>
         <View style={styles.photoModalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t("history.detail")}</Text>
@@ -574,129 +633,140 @@ export default function HistoryScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.photoModalContent}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView style={styles.photoModalContent} showsVerticalScrollIndicator={false}>
             {selectedItem && (
               <View style={styles.detailsCard}>
                 <Text style={styles.detailStatus}>
-                  {selectedItem.status_kehadiran}
+                  {getStatusConfig(selectedItem.status_kehadiran, t, selectedItem.jenis_izin).translatedLabel}
                 </Text>
                 <Text style={styles.detailDate}>{selectedItem.tanggal}</Text>
+                
+                {/* Show izin details if it's a leave request */}
+                {selectedItem.status_kehadiran?.toLowerCase().includes("izin") && (
+                  <View style={styles.izinDetailsContainer}>
+                    {/* Keterangan Izin */}
+                    {selectedItem.keterangan_izin && (
+                      <View style={styles.izinDetailRow}>
+                        <Text style={styles.izinDetailLabel}>{t("history.keterangan")}:</Text>
+                        <Text style={styles.izinDetailValue}>{selectedItem.keterangan_izin}</Text>
+                      </View>
+                    )}
+                    
+                    {/* Status Izin */}
+                    {selectedItem.status_izin !== undefined && (
+                      <View style={styles.izinDetailRow}>
+                        <Text style={styles.izinDetailLabel}>{t("history.statusIzin")}:</Text>
+                        <View style={[
+                          styles.statusIzinBadge, 
+                          { backgroundColor: getIzinStatusConfig(selectedItem.status_izin, t).backgroundColor }
+                        ]}>
+                          <Ionicons 
+                            name={getIzinStatusConfig(selectedItem.status_izin, t).icon} 
+                            size={14} 
+                            color={getIzinStatusConfig(selectedItem.status_izin, t).color} 
+                          />
+                          <Text style={[
+                            styles.statusIzinText, 
+                            { color: getIzinStatusConfig(selectedItem.status_izin, t).color }
+                          ]}>
+                            {getIzinStatusConfig(selectedItem.status_izin, t).text}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
-            <View style={styles.photoButtonsGrid}>
-              {/* Show attendance proof buttons for non-leave statuses */}
-              {!selectedItem?.status_kehadiran?.startsWith("Izin") && (
-                <>
-                  {selectedItem?.bukti_kehadiran && (
+            {/* Dynamic proof buttons based on attendance status and available data */}
+            {(() => {
+              const proofConfig = getProofButtonsConfig(selectedItem);
+              const hasAnyProof = proofConfig.showCheckIn || proofConfig.showCheckOut || proofConfig.showLeave;
+
+              // Only show buttons grid if there's any proof to show
+              if (!hasAnyProof) {
+                return (
+                  <View style={styles.noProofContainer}>
+                    <Ionicons name="document-outline" size={48} color="#C7C7CC" />
+                    <Text style={styles.noProofText}>{t("history.noProof")}</Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View style={styles.photoButtonsGrid}>
+                  {/* Show check in proof button */}
+                  {proofConfig.showCheckIn && (
                     <TouchableOpacity
                       onPress={() => setSelectedPhotoType("masuk")}
-                      style={[
-                        styles.photoButton,
-                        selectedPhotoType === "masuk" &&
-                          styles.activePhotoButton,
-                      ]}
-                    >
+                      style={[styles.photoButton, selectedPhotoType === "masuk" && styles.activePhotoButton]}>
                       <Ionicons
                         name="log-in-outline"
                         size={20}
-                        color={
-                          selectedPhotoType === "masuk" ? "#fff" : "#007AFF"
-                        }
+                        color={selectedPhotoType === "masuk" ? "#fff" : "#007AFF"}
                       />
                       <Text
-                        style={[
-                          styles.photoButtonText,
-                          selectedPhotoType === "masuk" &&
-                            styles.activePhotoButtonText,
-                        ]}
-                      >
+                        style={[styles.photoButtonText, selectedPhotoType === "masuk" && styles.activePhotoButtonText]}>
                         {t("history.checkIn")}
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {selectedItem?.bukti_kehadiran2 && (
+
+                  {/* Show check out proof button */}
+                  {proofConfig.showCheckOut && (
                     <TouchableOpacity
                       onPress={() => setSelectedPhotoType("pulang")}
-                      style={[
-                        styles.photoButton,
-                        selectedPhotoType === "pulang" &&
-                          styles.activePhotoButton,
-                      ]}
-                    >
+                      style={[styles.photoButton, selectedPhotoType === "pulang" && styles.activePhotoButton]}>
                       <Ionicons
                         name="log-out-outline"
                         size={20}
-                        color={
-                          selectedPhotoType === "pulang" ? "#fff" : "#007AFF"
-                        }
+                        color={selectedPhotoType === "pulang" ? "#fff" : "#007AFF"}
                       />
                       <Text
                         style={[
                           styles.photoButtonText,
-                          selectedPhotoType === "pulang" &&
-                            styles.activePhotoButtonText,
-                        ]}
-                      >
+                          selectedPhotoType === "pulang" && styles.activePhotoButtonText,
+                        ]}>
                         {t("history.checkOut")}
                       </Text>
                     </TouchableOpacity>
                   )}
-                </>
-              )}
 
-              {/* Show leave proof for leave statuses */}
-              {selectedItem?.status_kehadiran?.startsWith("Izin") &&
-                selectedItem?.bukti_izin && (
-                  <TouchableOpacity
-                    onPress={() => setSelectedPhotoType("izin")}
-                    style={[
-                      styles.photoButton,
-                      styles.leavePhotoButton,
-                      selectedPhotoType === "izin" && styles.activeLeaveButton,
-                    ]}
-                  >
-                    <Ionicons
-                      name="document-text-outline"
-                      size={20}
-                      color={selectedPhotoType === "izin" ? "#fff" : "#FF9500"}
-                    />
-                    <Text
+                  {/* Show leave proof button */}
+                  {proofConfig.showLeave && (
+                    <TouchableOpacity
+                      onPress={() => setSelectedPhotoType("izin")}
                       style={[
-                        styles.leavePhotoButtonText,
-                        selectedPhotoType === "izin" &&
-                          styles.activePhotoButtonText,
-                      ]}
-                    >
-                      {t("form.bukti")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-            </View>
+                        styles.photoButton,
+                        styles.leavePhotoButton,
+                        selectedPhotoType === "izin" && styles.activeLeaveButton,
+                      ]}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={20}
+                        color={selectedPhotoType === "izin" ? "#fff" : "#FF9500"}
+                      />
+                      <Text
+                        style={[styles.leavePhotoButtonText, selectedPhotoType === "izin" && styles.activePhotoButtonText]}>
+                        {t("form.bukti")}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })()}
 
             {/* Display selected photo */}
             {selectedPhotoType && (
               <View style={styles.photoContainer}>
-                {selectedPhotoType === "masuk" &&
-                  selectedItem?.bukti_kehadiran && (
-                    <Image
-                      source={{ uri: selectedItem.bukti_kehadiran }}
-                      style={styles.photo}
-                      resizeMode="contain"
-                    />
-                  )}
+                {selectedPhotoType === "masuk" && selectedItem?.bukti_kehadiran && (
+                  <Image source={{ uri: selectedItem.bukti_kehadiran }} style={styles.photo} resizeMode="contain" />
+                )}
 
-                {selectedPhotoType === "pulang" &&
-                  selectedItem?.bukti_kehadiran2 && (
-                    <Image
-                      source={{ uri: selectedItem.bukti_kehadiran2 }}
-                      style={styles.photo}
-                      resizeMode="contain"
-                    />
-                  )}
+                {selectedPhotoType === "pulang" && selectedItem?.bukti_kehadiran2 && (
+                  <Image source={{ uri: selectedItem.bukti_kehadiran2 }} style={styles.photo} resizeMode="contain" />
+                )}
 
                 {selectedPhotoType === "izin" && selectedItem?.bukti_izin && (
                   <View
@@ -749,9 +819,7 @@ export default function HistoryScreen() {
 
           {filteredData.length > 0 && (
             <View style={styles.statsContainer}>
-              <Text style={styles.statsText}>
-                {filteredData.length + t("history.found")}
-              </Text>
+              <Text style={styles.statsText}>{filteredData.length + t("history.found")}</Text>
             </View>
           )}
         </View>
@@ -764,9 +832,7 @@ export default function HistoryScreen() {
         ) : (
           <FlatList
             data={filteredData}
-            keyExtractor={(item, idx) =>
-              item?.id ? item.id.toString() : `item-${idx}`
-            }
+            keyExtractor={(item, idx) => (item?.id ? item.id.toString() : `item-${idx}`)}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -775,7 +841,6 @@ export default function HistoryScreen() {
                 <View style={styles.emptyIconContainer}>
                   <Ionicons name="calendar-outline" size={64} color="#C7C7CC" />
                 </View>
-                {/* <Text style={styles.emptyTitle}>{t("history.blank")}</Text> */}
                 <Text style={styles.emptyText}>{t("history.blank")}</Text>
               </View>
             }
@@ -1154,6 +1219,48 @@ const styles = StyleSheet.create({
   detailDate: {
     fontSize: 14,
     color: "#8E8E93",
+    marginBottom: 12,
+  },
+  izinDetailsContainer: {
+    width: "100%",
+    gap: 12,
+  },
+  izinDetailRow: {
+    flexDirection: "column",
+    gap: 4,
+  },
+  izinDetailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1C1C1E",
+  },
+  izinDetailValue: {
+    fontSize: 14,
+    color: "#8E8E93",
+    lineHeight: 20,
+  },
+  statusIzinBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    alignSelf: "flex-start",
+  },
+  statusIzinText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  noProofContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 12,
+  },
+  noProofText: {
+    fontSize: 16,
+    color: "#8E8E93",
+    textAlign: "center",
   },
   photoButtonsGrid: {
     flexDirection: "row",
@@ -1207,5 +1314,22 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 300,
     backgroundColor: "#F2F2F7",
+  },
+  statusRow: {
+    marginBottom: 4,
+  },
+  shiftRow: {
+    marginBottom: 8,
+    alignItems: "flex-start",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    maxWidth: "100%",
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

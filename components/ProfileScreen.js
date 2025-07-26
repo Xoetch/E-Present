@@ -5,8 +5,9 @@ import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import API from "../utils/ApiConfig";
+import CustomAlert from "../utils/CustomAlert";
 
 export default function ProfileScreen({ onLogout }) {
   const navigation = useNavigation();
@@ -85,25 +86,33 @@ export default function ProfileScreen({ onLogout }) {
   };
 
   const handleLogout = async () => {
-    Alert.alert(t("profile.Konfirmasi"), null, [
-      {
-        text: t("general.no"),
-        style: "cancel",
-      },
-      {
-        text: t("general.yes"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await AsyncStorage.multiRemove(["userToken", "userData"]);
-            onLogout(); // <-- kembalikan ke login screen
-          } catch (error) {
-            console.error("Logout error:", error);
-            Alert.alert("Error", "Gagal logout");
-          }
+    CustomAlert.alert(
+      t("profile.Konfirmasi"),
+      t("profile.logoutConfirmMessage") || "Apakah Anda yakin ingin keluar?",
+      [
+        {
+          text: t("general.no"),
+          style: "cancel",
         },
-      },
-    ]);
+        {
+          text: t("general.yes"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove(["userToken", "userData"]);
+              onLogout(); // <-- kembalikan ke login screen
+            } catch (error) {
+              console.error("Logout error:", error);
+              CustomAlert.error(
+                "Kesalahan Logout",
+                "Terjadi kesalahan saat logout. Silakan coba lagi.",
+                [{ text: "OK", style: "cancel" }]
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Helper function to construct correct image URL
@@ -132,11 +141,29 @@ export default function ProfileScreen({ onLogout }) {
         id_pengguna = data.id_pengguna;
       }
     } catch (error) {
-      Alert.alert("Error", "Gagal mengambil data pengguna");
+      CustomAlert.error(
+        "Kesalahan Sistem",
+        "Gagal mengambil data pengguna. Silakan coba lagi.",
+        [{ text: "OK", style: "cancel" }]
+      );
+      return;
     }
 
     if (!id_pengguna) {
-      Alert.alert("Error", "Id pengguna tidak ditemukan!");
+      CustomAlert.error(
+        "Data Pengguna Tidak Ditemukan",
+        "ID pengguna tidak ditemukan. Silakan login ulang.",
+        [
+          { text: "OK", style: "cancel" },
+          { 
+            text: "Login Ulang", 
+            onPress: () => {
+              // Handle logout/login redirect here
+              handleLogout();
+            }
+          }
+        ]
+      );
       return;
     }
 
@@ -153,6 +180,7 @@ export default function ProfileScreen({ onLogout }) {
       const res = await axios.post(API.PROFILE, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      
       if (res.data && res.data.data) {
         const updatedData = res.data.data;
 
@@ -170,11 +198,26 @@ export default function ProfileScreen({ onLogout }) {
 
         const verifyData = await AsyncStorage.getItem("userData");
         console.log("✅ AsyncStorage updated:", JSON.parse(verifyData));
-        Alert.alert("Sukses", res.data.message);
+        
+        CustomAlert.success(
+          "Foto Profil Berhasil Diperbarui",
+          res.data.message || "Foto profil Anda telah berhasil diperbarui.",
+          [{ text: "OK" }]
+        );
       }
     } catch (e) {
       console.error("ERROR: " + e);
-      Alert.alert("Error", "Gagal update profile pics");
+      
+      // Handle different types of errors
+      const errorData = e.response?.data;
+      const errorTitle = errorData?.data || "Gagal Memperbarui Foto Profil";
+      const errorMessage = errorData?.message || "Terjadi kesalahan saat memperbarui foto profil. Silakan coba lagi.";
+      
+      CustomAlert.error(
+        errorTitle,
+        errorMessage,
+        [{ text: "OK", style: "cancel" }]
+      );
     }
   };
 

@@ -48,7 +48,9 @@
     "expo-file-system": "~18.1.11",
     "expo-media-library": "~17.1.7",
     "expo-sharing": "~13.1.5",
-    "expo-intent-launcher": "~12.1.5"
+    "expo-intent-launcher": "~12.1.5",
+    "victory-native": "^41.17.4",
+    "react-native-reanimated": "~3.17.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
