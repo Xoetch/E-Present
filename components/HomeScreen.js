@@ -58,13 +58,6 @@ export default function HomeScreen({ navigation }) {
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
 
-  const formatToAMPM = (time24) => {
-    if (!time24) return "-";
-    const [hourStr, minute] = time24.split(":");
-    const hour = parseInt(hourStr);
-    // const suffix = hour >= 12 ;
-    return `${hourStr}:${minute} `;
-  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -146,7 +139,7 @@ export default function HomeScreen({ navigation }) {
           if (!result?.data) return;
 
           const todayEntry = result.data.find((item) => item.tanggal === today);
-
+          
           if (todayEntry) {
             setTodayAttendance({
               jam_masuk: todayEntry.jam_masuk || null,
@@ -155,6 +148,7 @@ export default function HomeScreen({ navigation }) {
           } else {
             setTodayAttendance({ jam_masuk: null, jam_keluar: null });
           }
+          console.log("Attendance for today:", todayAttendance);
 
           // FETCH PIE CHART
           const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
@@ -219,21 +213,33 @@ export default function HomeScreen({ navigation }) {
     return isNationalHoliday || isWeekend;
   }, [holidays, currentDateStr]);
 
-  const isAbsenDisabled = useMemo(() => {
+  const isAfterShift = useMemo(() => {
     if (userData.shift_selesai) {
       const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
       const now = new Date();
-      const batasAbsen = new Date(now);
+      const batasAkhir = new Date(now);
+      batasAkhir.setHours(endHour, endMinute, 0, 0);
+      return now >= batasAkhir;
+    }
+    return false;
+  }, [userData.shift_selesai, currentTime]);
+
+  const isAbsenDisabled = useMemo(() => {
+    if (userData.shift_selesai) {
       
       if (todayAttendance.jam_masuk == null) {
-        batasAbsen.setHours(endHour, endMinute, 0, 0);
-        return now >= batasAbsen;
+        return isAfterShift;
       }
+      const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
+      const now = new Date();
+      const batasAbsen = new Date(now);
       batasAbsen.setHours(endHour + 1, endMinute, 0, 0); // shift_selesai + 1 jam
       return now >= batasAbsen;
     }
     return false;
   }, [userData.shift_selesai, todayAttendance.jam_masuk, currentDateStr]);
+
+  
 
 
   const handleNavigation = (screenName) => {
@@ -296,10 +302,10 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                (isTodayHoliday || isAbsenDisabled) && { opacity: 0.5 },
+                (isAbsenDisabled) && { opacity: 0.5 },
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isTodayHoliday || isAbsenDisabled}
+              disabled={isAbsenDisabled}
             >
               <View
                 style={[
@@ -342,7 +348,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
                 <Text style={styles.attendanceTime}>
                   {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_masuk)
+                    ? todayAttendance.jam_masuk.slice(0, 5)
                     : "-"}
                 </Text>
               </View>
@@ -355,8 +361,8 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_keluar)
+                  {todayAttendance.jam_keluar
+                    ? todayAttendance.jam_keluar.slice(0, 5)
                     : "-"}
                 </Text>
               </View>
@@ -416,6 +422,7 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
+        isAfterShift={isAfterShift}
       />
     </View>
   );

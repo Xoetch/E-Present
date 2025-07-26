@@ -95,14 +95,11 @@ export default function MapLocationScreen() {
           now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
         if (
-          currentSeconds > shiftStartSeconds &&
-          currentSeconds <= shiftEndSeconds
+          currentSeconds > shiftStartSeconds
         ) {
           status_kehadiran = "Terlambat";
         } else if (currentSeconds <= shiftStartSeconds) {
           status_kehadiran = "Hadir"; // tepat waktu atau datang lebih awal
-        } else if (currentSeconds > shiftEndSeconds) {
-          status_kehadiran = "Hadir"; // datang sangat terlambat (tapi tetap dihitung hadir)
         }
       }
 
