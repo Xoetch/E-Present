@@ -45,7 +45,8 @@
     "eng": "Bahasa Inggris",
     "ind": "Bahasa Indonesia",
     "logout": "Keluar",
-    "Konfirmasi": "Anda yakin ingin keluar?",
+    "Konfirmasi": "Konfirmasi Keluar Akun",
+    "logoutConfirmMessage": "Apakah Anda yakin ingin keluar dari akun ini?",
     "info": "Informasi Pengguna"
   },
   "history": {

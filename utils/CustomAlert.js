@@ -131,15 +131,20 @@ const AlertProvider = ({ children }) => {
       {children}
       <Modal
         isVisible={alertState.isVisible}
-        animationIn="fadeIn"
-        animationOut="fadeOut"
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
         backdropOpacity={0.5}
-        backdropTransitionInTiming={300}
+        backdropTransitionInTiming={700}
         backdropTransitionOutTiming={300}
         onBackdropPress={() => CustomAlert.hide()}
         onModalHide={handleModalHide}
-        style={styles.modalContainer}>
+        style={styles.modal}>
         <View style={styles.alertContainer}>
+          {/* Modal Header with Grey Line */}
+          <View style={styles.modalHeader}>
+            <View style={styles.greyLine} />
+          </View>
+
           {/* Icon Section */}
           <View style={[styles.iconContainer, { backgroundColor: alertConfig.backgroundColor }]}>
             <Ionicons name={alertConfig.iconName} size={48} color={alertConfig.iconColor} />
@@ -191,23 +196,35 @@ const AlertProvider = ({ children }) => {
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    justifyContent: "center",
-    alignItems: "center",
+  modal: {
+    justifyContent: "flex-end",
     margin: 0,
   },
   alertContainer: {
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 24,
-    width: width * 0.85,
-    maxWidth: 400,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 34,
+    minHeight: 200,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 8,
+  },
+  modalHeader: {
+    paddingTop: 12,
+    paddingBottom: 20,
+    width: "100%",
+    alignItems: "center",
+  },
+  greyLine: {
+    height: 4,
+    width: 40,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 2,
   },
   iconContainer: {
     width: 80,
@@ -219,15 +236,16 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
+    paddingHorizontal: 16,
   },
   titleText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#1C1C1E",
     textAlign: "center",
     marginBottom: 8,
-    lineHeight: 24,
+    lineHeight: 28,
   },
   messageText: {
     fontSize: 16,
@@ -239,15 +257,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     width: "100%",
     gap: 12,
+    paddingHorizontal: 4,
   },
   button: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 52,
   },
   singleButton: {
     flex: 1,

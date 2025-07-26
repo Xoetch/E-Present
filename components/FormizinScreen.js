@@ -6,7 +6,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  // Alert,
   Dimensions,
   Image,
   ScrollView,
@@ -94,7 +93,11 @@ export default function FormizinPopup({
     setShowStartPicker(false);
     if (selectedDate) {
       // if (isHariLibur(selectedDate)) {
-      //   Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+      //   CustomAlert.warning(
+      //     "Tanggal Tidak Tersedia",
+      //     "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.",
+      //     [{ text: "OK", style: "cancel" }]
+      //   );
       //   return;
       // }
       setStartDate(selectedDate);
@@ -107,7 +110,11 @@ export default function FormizinPopup({
     setShowEndPicker(false);
     if (selectedDate) {
       // if (isHariLibur(selectedDate)) {
-      //   Alert.alert("Tanggal tidak tersedia", "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.");
+      //   CustomAlert.warning(
+      //     "Tanggal Tidak Tersedia",
+      //     "Tanggal ini adalah hari libur. Silakan pilih tanggal lain.",
+      //     [{ text: "OK", style: "cancel" }]
+      //   );
       //   return;
       // }
       setEndDate(selectedDate);
@@ -121,7 +128,12 @@ export default function FormizinPopup({
     const now = new Date();
     selected.setSeconds(0);
     if (selected.getTime() < now.getTime()) {
-      Alert.alert("Tidak bisa memilih waktu kurang dari jam sekarang!");
+      CustomAlert.warning(
+        "Waktu Tidak Valid",
+        "Tidak bisa memilih waktu kurang dari jam sekarang!",
+        [{ text: "OK", style: "cancel" }]
+      );
+      return;
     }
     setJamStart(selected);
   };
@@ -133,7 +145,11 @@ export default function FormizinPopup({
     const selected = new Date(time);
     selected.setSeconds(0);
     if (selected.getTime() < jamStart.getTime()) {
-      Alert.alert("Jam berakhir tidak boleh kurang dari jam mulai!");
+      CustomAlert.error(
+        "Waktu Tidak Valid",
+        "Jam berakhir tidak boleh kurang dari jam mulai!",
+        [{ text: "OK", style: "cancel" }]
+      );
       return;
     }
     // TODO implementasi jamKhir tidak boleh dari jam shift dibawah sini
@@ -153,14 +169,22 @@ export default function FormizinPopup({
 
   const submitIzin = async () => {
     if (!startDate || !endDate || !jenis || !image) {
-      Alert.alert("Error", "Semua field wajib diisi dan foto harus diambil");
+      CustomAlert.error(
+        "Data Tidak Lengkap",
+        "Semua field wajib diisi dan foto harus diambil",
+        [{ text: "OK", style: "cancel" }]
+      );
       return;
     }
     console.log("Jenis izin yang dipilih:", jenis);
 
     console.log(startDate);
     // if (isHariLibur(startDate) || isHariLibur(endDate)) {
-    //   Alert.alert("Tanggal tidak tersedia", "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.");
+    //   CustomAlert.warning(
+    //     "Tanggal Tidak Tersedia",
+    //     "Tanggal yang dipilih adalah hari libur. Silakan pilih tanggal lain.",
+    //     [{ text: "OK", style: "cancel" }]
+    //   );
     //   return;
     // }
 
@@ -175,12 +199,26 @@ export default function FormizinPopup({
         id_shift = userData.id_shift;
       }
     } catch (e) {
-      Alert.alert("Error", "Gagal mengambil data pengguna");
+      CustomAlert.error(
+        "Kesalahan Sistem",
+        "Gagal mengambil data pengguna. Silakan coba lagi.",
+        [{ text: "OK", style: "cancel" }]
+      );
       return;
     }
 
     if (!id_pengguna) {
-      Alert.alert("Error", "Pengguna tidak ditemukan");
+      CustomAlert.error(
+        "Data Pengguna Tidak Ditemukan",
+        "Silakan login ulang untuk melanjutkan.",
+        [
+          { text: "OK", style: "cancel" },
+          { text: "Login Ulang", onPress: () => {
+            // Handle logout/login redirect here
+            console.log("Redirect to login");
+          }}
+        ]
+      );
       return;
     }
 
@@ -226,14 +264,33 @@ export default function FormizinPopup({
           "Content-Type": "multipart/form-data",
         },
       });
-      Alert.alert(res.data.data, res.data.message);
-      console.log(res.data.message);
+      
+      // Success response from backend
+      CustomAlert.success(
+        res.data.data || "Berhasil",
+        res.data.message || "Izin berhasil diajukan",
+        [{ 
+          text: "OK", 
+          onPress: () => {
+            console.log("Success:", res.data.message);
+            handleClose();
+          }
+        }]
+      );
 
-      handleClose();
     } catch (err) {
-      console.log(res.data.message);
-
-      Alert.alert(res.data.data, res.data.message);
+      console.log("Error:", err);
+      
+      // Error response from backend
+      const errorData = err.response?.data;
+      const errorTitle = errorData?.data || "Gagal Mengajukan Izin";
+      const errorMessage = errorData?.message || "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.";
+      
+      CustomAlert.error(
+        errorTitle,
+        errorMessage,
+        [{ text: "OK", style: "cancel" }]
+      );
     }
   };
 
