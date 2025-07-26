@@ -1,28 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import "./locales/i18n";
-import { NavigationContainer } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  useSafeAreaInsets,
-  SafeAreaProvider,
-} from "react-native-safe-area-context";
-import { useFonts } from "expo-font";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Text, View, ActivityIndicator } from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useFonts } from "expo-font";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Text } from "react-native";
+import "react-native-reanimated";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import "./locales/i18n";
 
 // Screens
-import LoginScreen from "./components/LoginScreen";
-import HomeScreen from "./components/HomeScreen";
-import HistoryScreen from "./components/HistoryScreen";
-import ProfileScreen from "./components/ProfileScreen";
 import CameraScreen from "./components/CameraScreen";
 import FormizinScreen from "./components/FormizinScreen";
-import resultModal from "./components/ResultModal";
+import HistoryScreen from "./components/HistoryScreen";
+import HomeScreen from "./components/HomeScreen";
 import LocationMapScreen from "./components/LocationMapScreen";
+import LoginScreen from "./components/LoginScreen";
+import ProfileScreen from "./components/ProfileScreen";
 import Loading from "./components/SplashScreen";
+import { AlertProvider } from "./utils/CustomAlert";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -55,18 +53,9 @@ function MainTabs({ onLogout }) {
           paddingBottom: 6 + insets.bottom,
           paddingTop: 6,
         },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: t("bar.home") }}
-      />
-      <Tab.Screen
-        name="History"
-        component={HistoryScreen}
-        options={{ tabBarLabel: t("bar.history") }}
-      />
+      })}>
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: t("bar.home") }} />
+      <Tab.Screen name="History" component={HistoryScreen} options={{ tabBarLabel: t("bar.history") }} />
       <Tab.Screen
         name="Profile"
         children={() => <ProfileScreen onLogout={onLogout} />}
@@ -76,11 +65,8 @@ function MainTabs({ onLogout }) {
   );
 }
 
-
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    
-  });
+  const [fontsLoaded] = useFonts({});
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -90,21 +76,20 @@ export default function App() {
     setIsLoggedIn(true);
   };
 
-useEffect(() => {
-  const loadApp = async () => {
-    const token = await AsyncStorage.getItem("userToken");
-    if (token) {
-      setIsLoggedIn(true);
-    }
+  useEffect(() => {
+    const loadApp = async () => {
+      const token = await AsyncStorage.getItem("userToken");
+      if (token) {
+        setIsLoggedIn(true);
+      }
 
-    setTimeout(() => {
-      setIsAppLoading(false);
-    }, 2000); 
-  };
+      setTimeout(() => {
+        setIsAppLoading(false);
+      }, 2000);
+    };
 
-  loadApp();
-}, []);
-
+    loadApp();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -119,26 +104,23 @@ useEffect(() => {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!isLoggedIn ? (
-            <Stack.Screen name="Login">
-              {() => <LoginScreen onLoginSuccess={handleLoginSuccess} />}
-            </Stack.Screen>
-          ) : (
-            <>
-              <Stack.Screen name="MainTabs">
-                {() => <MainTabs onLogout={() => setIsLoggedIn(false)} />}
-              </Stack.Screen>
-              <Stack.Screen name="CameraScreen" component={CameraScreen} />
-              <Stack.Screen name="FormIzinScreen" component={FormizinScreen} />
-              {/* <Stack.Screen name="ResultModal" component={resultModal} /> */}
-              <Stack.Screen name="LocationMap" component={LocationMapScreen} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AlertProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {!isLoggedIn ? (
+              <Stack.Screen name="Login">{() => <LoginScreen onLoginSuccess={handleLoginSuccess} />}</Stack.Screen>
+            ) : (
+              <>
+                <Stack.Screen name="MainTabs">{() => <MainTabs onLogout={() => setIsLoggedIn(false)} />}</Stack.Screen>
+                <Stack.Screen name="CameraScreen" component={CameraScreen} />
+                <Stack.Screen name="FormIzinScreen" component={FormizinScreen} />
+                {/* <Stack.Screen name="ResultModal" component={resultModal} /> */}
+                <Stack.Screen name="LocationMap" component={LocationMapScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AlertProvider>
     </SafeAreaProvider>
   );
 }
-

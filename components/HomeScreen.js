@@ -1,23 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { PieChart } from "react-native-chart-kit";
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import API from "../utils/ApiConfig";
+import WithLoader from "../utils/Loader";
 import CalendarWithHoliday from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
-import WithLoader from "../utils/Loader";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import API from "../utils/ApiConfig";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -30,7 +21,7 @@ export default function HomeScreen({ navigation }) {
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const dd = String(now.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`; // hasilnya format YYYY-MM-DD sesuai zona lokal
+    return `${yyyy}-${mm}-${dd}`;
   });
 
   const [todayAttendance, setTodayAttendance] = useState({
@@ -64,8 +55,108 @@ export default function HomeScreen({ navigation }) {
     if (!time24) return "-";
     const [hourStr, minute] = time24.split(":");
     const hour = parseInt(hourStr);
-    // const suffix = hour >= 12 ;
     return `${hourStr}:${minute} `;
+  };
+
+  const mapLabelToTranslationKey = (apiLabel) => {
+    const normalizedLabel = apiLabel.toLowerCase();
+    if (normalizedLabel.includes("alfa") || normalizedLabel.includes("alpa")) return "general.alfa";
+    if (normalizedLabel.includes("terlambat")) return "history.telat";
+    if (normalizedLabel.includes("tidak absen pulang")) return "history.tidakAbsen";
+    if (normalizedLabel.includes("izin")) return "general.izin";
+    if (normalizedLabel.includes("hadir")) return "general.hadir";
+    return "general.lain";
+  };
+
+  const getColorByStatus = (translationKey) => {
+    switch (translationKey) {
+      case "general.alfa":
+        return "#F44336";
+      case "history.telat":
+        return "#FF7043";
+      case "history.tidakAbsen":
+        return "#FF8A65";
+      case "general.izin":
+        return "#FFC107";
+      case "general.hadir":
+        return "#4CAF50";
+      default:
+        return "#9E9E9E";
+    }
+  };
+
+  // Responsive Pie Chart dengan ukuran dinamis
+  const ResponsivePieChart = ({ data }) => {
+    // Hitung ukuran berdasarkan screen width
+    const cardPadding = 40; // padding kiri kanan card (20 * 2)
+    const chartContainerPadding = 20; // padding dalam chartContainer (10 * 2)
+    const availableWidth = screenWidth - cardPadding - chartContainerPadding;
+    
+    // Bagi ruang antara chart dan legend (40% untuk chart, 60% untuk legend)
+    const chartWidth = Math.min(availableWidth * 0.4, 140); // maksimal 140
+    const chartSize = Math.max(chartWidth, 100); // minimal 100
+    
+    const radius = chartSize / 2;
+    const center = radius;
+
+    const total = data.reduce((sum, item) => sum + item.y, 0);
+
+    if (total === 0) return null;
+
+    let currentAngle = -90;
+
+    const createPath = (startAngle, endAngle, outerRadius) => {
+      const startAngleRad = (startAngle * Math.PI) / 180;
+      const endAngleRad = (endAngle * Math.PI) / 180;
+
+      const x1 = center + outerRadius * Math.cos(startAngleRad);
+      const y1 = center + outerRadius * Math.sin(startAngleRad);
+      const x2 = center + outerRadius * Math.cos(endAngleRad);
+      const y2 = center + outerRadius * Math.sin(endAngleRad);
+
+      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+      return `M ${center} ${center} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+    };
+
+    return (
+      <View style={[styles.pieChartWrapper, { width: chartSize, height: chartSize }]}>
+        <Svg width={chartSize} height={chartSize}>
+          {data.map((item, index) => {
+            const percentage = (item.y / total) * 100;
+            const angle = (percentage / 100) * 360;
+            const endAngle = currentAngle + angle;
+
+            const path = createPath(currentAngle, endAngle, radius);
+            currentAngle = endAngle;
+
+            return <Path key={index} d={path} fill={item.fill} stroke="#fff" strokeWidth="2" />;
+          })}
+        </Svg>
+      </View>
+    );
+  };
+
+  const ResponsiveLegend = ({ data }) => {
+    const total = data.reduce((sum, item) => sum + item.y, 0);
+
+    return (
+      <View style={styles.responsiveLegendContainer}>
+        {data.map((item, index) => (
+          <View key={index} style={styles.responsiveLegendItem}>
+            <View style={[styles.legendColor, { backgroundColor: item.fill }]} />
+            <View style={styles.legendTextContainer}>
+              <Text style={styles.legendText} numberOfLines={2}>
+                {item.label}
+              </Text>
+              <Text style={styles.legendValue}>
+                {item.y} {t("general.hari")} ({((item.y / total) * 100).toFixed(1)}%)
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
   };
 
   useEffect(() => {
@@ -74,7 +165,7 @@ export default function HomeScreen({ navigation }) {
       if (now !== currentDateStr) {
         setCurrentDateStr(now);
       }
-    }, 60 * 1000); // Cek setiap 1 menit
+    }, 60 * 1000);
 
     return () => clearInterval(interval);
   }, [currentDateStr]);
@@ -94,9 +185,7 @@ export default function HomeScreen({ navigation }) {
 
           if (!result?.data) return;
 
-          const hadirData = result.data.filter(
-            (item) => item.status_kehadiran === "Hadir"
-          );
+          const hadirData = result.data.filter((item) => item.status_kehadiran === "Hadir");
 
           const todayEntry = result.data.find((item) => item.tanggal === today);
 
@@ -137,35 +226,23 @@ export default function HomeScreen({ navigation }) {
 
           setRecentAttendance(converted.slice(0, 3));
 
-          // FETCH PIE CHART
           const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
           const pieJson = await pieRes.json();
 
-          const getColorByStatus = (label) => {
-            const normalizedLabel = label.toLowerCase();
-            if (
-              normalizedLabel.includes("alfa") ||
-              normalizedLabel.includes("alpa")
-            )
-              return "#F44336";
-            if (normalizedLabel.includes("izin")) return "#FFC107";
-            if (normalizedLabel.includes("hadir")) return "#4CAF50";
-            if (normalizedLabel.includes("sakit")) return "#42A5F5";
-            return "#9E9E9E";
-          };
-
-          const pieData = pieJson.labels.map((label, index) => ({
-            name: label,
-            population: pieJson.data[index],
-            color: getColorByStatus(label),
-            legendFontColor: "#333",
-            legendFontSize: 14,
-          }));
+          const pieData = pieJson.labels
+            .map((label, index) => {
+              const translationKey = mapLabelToTranslationKey(label);
+              return {
+                x: index,
+                y: pieJson.data[index],
+                label: t(translationKey),
+                fill: getColorByStatus(translationKey),
+              };
+            })
+            .filter((item) => item.y > 0);
 
           setChartData(pieData);
-          console.log(pieData);
 
-          // Existing Izin
           const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
           const izinJson = await izinRes.json();
           if (izinJson?.data) {
@@ -178,10 +255,9 @@ export default function HomeScreen({ navigation }) {
       };
 
       fetchAttendanceHistory();
-    }, [currentDateStr])
+    }, [currentDateStr, t])
   );
 
-  // Animation + userData update when screen focused
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
@@ -232,11 +308,10 @@ export default function HomeScreen({ navigation }) {
     }, [animatedValue])
   );
 
-  // Time ticker only (no user data here anymore)
   const getCurrentTimeString = () => {
     const interval = setInterval(() => {
       const now = new Date();
-      const hours = now.getHours().toString().padStart(2, "0"); // tambahkan padStart
+      const hours = now.getHours().toString().padStart(2, "0");
       const minutes = now.getMinutes().toString().padStart(2, "0");
       setCurrentTime(`${hours}:${minutes}`);
       setLoadingTime(false);
@@ -247,7 +322,7 @@ export default function HomeScreen({ navigation }) {
 
   const isTodayHoliday = () => {
     const today = new Date().toISOString().split("T")[0];
-    const dayOfWeek = new Date().getDay(); // 0 = Minggu, 6 = Sabtu
+    const dayOfWeek = new Date().getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isNationalHoliday = holidays.some((item) => {
       const start = new Date(item.tanggal_mulai);
@@ -272,7 +347,6 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.wrapper}>
       <View style={styles.blueBackground} />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Enhanced Header Section */}
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <Image
@@ -290,15 +364,9 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <Animated.View
-          style={[
-            styles.whiteContainer,
-            { transform: [{ translateY: animatedValue }] },
-          ]}
-        >
+        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
           <View style={styles.greyLine} />
 
-          {/* Time Section */}
           <View style={styles.timeSection}>
             <WithLoader loading={loadingTime}>
               <Text style={styles.time}>{currentTime}</Text>
@@ -313,45 +381,26 @@ export default function HomeScreen({ navigation }) {
             </WithLoader>
           </View>
 
-          {/* Action Buttons Section */}
           <View style={styles.actionCard}>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                isTodayHoliday() && { opacity: 0.5 },
-              ]}
+              style={[styles.actionButton, isTodayHoliday() && { opacity: 0.5 }]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isTodayHoliday()}
-            >
+              disabled={isTodayHoliday()}>
               <View
-                style={[
-                  styles.actionIconContainer,
-                  styles.scanIconContainer,
-                  isTodayHoliday() && { opacity: 0.5 },
-                ]}
-              >
+                style={[styles.actionIconContainer, styles.scanIconContainer, isTodayHoliday() && { opacity: 0.5 }]}>
                 <Ionicons name="scan" size={24} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => setShowFormIzin(true)}
-            >
-              <View
-                style={[
-                  styles.actionIconContainer,
-                  styles.documentIconContainer,
-                ]}
-              >
+            <TouchableOpacity style={styles.actionButton} onPress={() => setShowFormIzin(true)}>
+              <View style={[styles.actionIconContainer, styles.documentIconContainer]}>
                 <Ionicons name="document-text-outline" size={24} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Today's Attendance Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{t("home.todayInfo")}</Text>
@@ -364,9 +413,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_masuk)
-                    : "-"}
+                  {todayAttendance.jam_masuk ? formatToAMPM(todayAttendance.jam_masuk) : "-"}
                 </Text>
               </View>
 
@@ -378,69 +425,53 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_keluar)
-                    : "-"}
+                  {todayAttendance.jam_masuk ? formatToAMPM(todayAttendance.jam_keluar) : "-"}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Statistics Card */}
+          {/* Statistics Card - RESPONSIVE VERSION */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.rowBetween}>
                 <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
-                <TouchableOpacity
-                  onPress={() => handleNavigation("History")}
-                  style={styles.linkContainer}
-                >
+                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
                   <Text style={styles.link}>{t("home.lihat")}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
                 </TouchableOpacity>
               </View>
               <View style={styles.cardTitleUnderline} />
             </View>
-            <View style={styles.chartContainer}>
-              <PieChart
-                data={chartData}
-                width={screenWidth - 40}
-                height={150}
-                chartConfig={{
-                  backgroundColor: "#fff",
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
-                accessor={"population"}
-                backgroundColor={"transparent"}
-                paddingLeft={"10"}
-                absolute
-              />
-            </View>
+
+            {chartData.length > 0 ? (
+              <View style={styles.responsiveChartContainer}>
+                <View style={styles.responsiveChartLayout}>
+                  <ResponsivePieChart data={chartData} />
+                  <ResponsiveLegend data={chartData} />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="pie-chart-outline" size={48} color="#E0E0E0" />
+                <Text style={styles.noDataText}>Belum ada data statistik</Text>
+              </View>
+            )}
           </View>
 
-          {/* Calendar Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
               <View style={styles.cardTitleUnderline} />
             </View>
             <View style={styles.calendarContainer}>
-              <CalendarWithHoliday
-                holidays={holidays}
-                onHolidaysChange={setHolidays}
-              />
+              <CalendarWithHoliday holidays={holidays} onHolidaysChange={setHolidays} />
             </View>
           </View>
         </Animated.View>
       </ScrollView>
 
-      <FormizinPopup
-        visible={showFormIzin}
-        onClose={() => setShowFormIzin(false)}
-        disabledDates={disabledDates}
-      />
+      <FormizinPopup visible={showFormIzin} onClose={() => setShowFormIzin(false)} disabledDates={disabledDates} />
     </View>
   );
 }
@@ -544,9 +575,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
   },
-  disabledButton: {
-    opacity: 0.5,
-  },
   actionIconContainer: {
     width: 56,
     height: 56,
@@ -621,10 +649,69 @@ export const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     marginHorizontal: 20,
   },
-  chartContainer: {
+  // RESPONSIVE CHART STYLES
+  responsiveChartContainer: {
+    paddingVertical: 10,
+  },
+  responsiveChartLayout: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    overflow: "hidden", // ← Ini penting agar label tidak keluar
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 5,
+    gap: 15,
+  },
+  pieChartWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0, // Prevent shrinking
+  },
+  responsiveLegendContainer: {
+    flex: 1,
+    paddingLeft: 10,
+    minWidth: 0, // Allow shrinking if needed
+  },
+  responsiveLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    backgroundColor: "#F8F9FA",
+  },
+  legendColor: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+    flexShrink: 0,
+  },
+  legendTextContainer: {
+    flex: 1,
+    minWidth: 0, // Allow text to wrap
+  },
+  legendText: {
+    fontSize: 10,
+    color: "#333",
+    fontWeight: "500",
+    marginBottom: 1,
+    flexWrap: "wrap",
+  },
+  legendValue: {
+    fontSize: 9,
+    color: "#8E8E93",
+    fontWeight: "400",
+  },
+  noDataContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    marginTop: 12,
+    fontWeight: "500",
   },
   rowBetween: {
     flexDirection: "row",
@@ -640,49 +727,6 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: "#2E7BE8",
     fontWeight: "600",
-  },
-  historyList: {
-    gap: 12,
-  },
-  historyItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#F0F0F0",
-  },
-  historyIconContainer: {
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  checkInIcon: {
-    backgroundColor: "#4CAF50",
-  },
-  checkOutIcon: {
-    backgroundColor: "#F44336",
-  },
-  historyContent: {
-    flex: 1,
-  },
-  historyType: {
-    fontWeight: "bold",
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  historyDate: {
-    color: "#8E8E93",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  historyTime: {
-    fontWeight: "bold",
-    fontSize: 15,
   },
   calendarContainer: {
     borderRadius: 12,

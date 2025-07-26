@@ -6,7 +6,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
+  // Alert,
   Dimensions,
   Image,
   ScrollView,
@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import Modal from "react-native-modal";
 import API from "../utils/ApiConfig";
+import CustomAlert from "../utils/CustomAlert";
 
 const { height } = Dimensions.get("window");
 

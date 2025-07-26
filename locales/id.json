@@ -13,7 +13,9 @@
     "semua": "Semua",
     "yes": "Ya",
     "no": "Tidak",
-    "repeat": "Coba Lagi"
+    "repeat": "Coba Lagi",
+    "lain": "Lainnya",
+    "hari": "hari"
   },
   "home": {
     "statistik": "Absensi Bulan Ini",
@@ -61,7 +63,17 @@
     "checkIn": "Bukti Absen Masuk",
     "checkOut": "Bukti Absen Pulang",
     "telat": "Terlambat",
-    "tidakAbsen" : "Tidak Absen Pulang"
+    "tidakAbsen" : "Tidak Absen Pulang",
+    "masuk": "Masuk",
+    "pulang": "Pulang",
+    "izinFull": "Izin Harian",
+    "izinPart": "Izin Sebagian Waktu",
+    "statusIzin": "Status Izin",
+    "waiting": "Menunggu Persetujuan",
+    "diterima": "Izin Disetujui",
+    "ditolak": "Izin Ditolak",
+    "keterangan": "Keterangan Izin",
+    "noProof": "Tidak ada data bukti absen yang tersedia"
   },
    "filterhistory": {
     "title": "Filter Riwayat",
@@ -70,7 +82,6 @@
     "jenis": "Jenis Absensi",
     "btn": "Terapkan",
     "cancel": "Batal"
-
   },
   "notif": {},
   "camera": {
