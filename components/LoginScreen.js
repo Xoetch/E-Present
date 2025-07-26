@@ -18,6 +18,7 @@ import { useFonts } from "expo-font";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import API from "../utils/ApiConfig";
+import CustomAlert from "../utils/CustomAlert";
 
 export default function LoginScreen({ onLoginSuccess }) {
   const navigation = useNavigation();
@@ -82,10 +83,22 @@ export default function LoginScreen({ onLoginSuccess }) {
           onLoginSuccess(); 
         });
       } catch (error) {
-        alert(error.message || "Username atau password salah!");
+        CustomAlert.show({
+          type: "warning",
+          title: t("result.warning"),
+          message: error.message || "Username atau password salah!",
+          buttons: [{ text: t("general.ok"), onPress: null }],
+        })
+        // alert(error.message || "Username atau password salah!");
       }
     } else {
-      alert("Username dan password tidak boleh kosong!");
+      CustomAlert.show({
+        type: "warning",
+        title: t("result.warning"),
+        message: "Username dan password tidak boleh kosong!",
+        buttons: [{ text: t("general.ok"), onPress: null }],
+      })
+      // alert("Username dan password tidak boleh kosong!");
     }
   };
 

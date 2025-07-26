@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WithLoader from "../utils/Loader";
 import API from "../utils/ApiConfig";
+import CustomAlert from "../utils/CustomAlert";
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState("front");
@@ -66,6 +67,7 @@ export default function CameraScreen() {
     const [h, m, s] = timeStr.split(":").map(Number);
     return h * 3600 + m * 60 + s;
   };
+
 const fetchUserData = async () => {
   try {
     const dataString = await AsyncStorage.getItem("userData");
@@ -108,11 +110,19 @@ const fetchUserData = async () => {
     setIsAllowedTime(allowed);
   } catch (e) {
     console.log("Gagal mengambil shift dari userData:", e);
-    Alert.alert("Gagal", "Tidak dapat memproses jam shift pengguna.");
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "MainTabs" }],
-    });
+    CustomAlert.error(
+      "Gagal Memproses Data",
+      "Tidak dapat memproses jam shift pengguna. Silakan periksa data shift Anda atau hubungi administrator.",
+      [
+        {
+          text: "OK",
+          onPress: () => navigation.reset({
+            index: 0,
+            routes: [{ name: "MainTabs" }],
+          })
+        }
+      ]
+    );
   }
 };
 
@@ -137,21 +147,30 @@ const fetchUserData = async () => {
         await getAbsenHistory();
         const { status } = await requestPermission();
         if (status !== "granted") {
-          Alert.alert(
+          CustomAlert.error(
             "Izin Kamera Ditolak",
-            "Silakan aktifkan izin kamera secara manual di pengaturan aplikasi.",
+            "Aplikasi memerlukan akses kamera untuk melakukan absensi. Silakan aktifkan izin kamera di pengaturan aplikasi.",
             [
-              { text: "Batal", style: "cancel" },
+              { 
+                text: "Batal", 
+                style: "cancel",
+                onPress: () => navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs" }],
+                })
+              },
               {
                 text: "Buka Pengaturan",
-                onPress: () => Linking.openSettings(), // arahkan ke settings
+                onPress: () => {
+                  Linking.openSettings();
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: "MainTabs" }],
+                  });
+                }
               },
             ]
           );
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "MainTabs" }],
-          });
         }
       })();
     }, [])
@@ -171,7 +190,18 @@ const fetchUserData = async () => {
       });
     } catch (error) {
       console.log("Capture error:", error);
-      alert("Terjadi kesalahan saat mengambil foto");
+      CustomAlert.error(
+        "Gagal Mengambil Foto",
+        "Terjadi kesalahan saat mengambil foto. Pastikan kamera berfungsi dengan baik dan coba lagi.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // User bisa mencoba lagi tanpa navigasi keluar
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -268,12 +298,12 @@ const fetchUserData = async () => {
             ]}
             onPress={() => {
               if (hasClockInToday && !hasClockOutToday && isBeforeEndShift) {
-                Alert.alert(
-                  "Belum Boleh Pulang",
-                  "Silakan absen pulang setelah jam kerja selesai.",
+                CustomAlert.warning(
+                  "Belum Waktu Pulang",
+                  "Anda belum bisa melakukan absen pulang karena jam kerja belum selesai. Silakan tunggu hingga waktu pulang tiba.",
                   [
                     {
-                      text: "OK",
+                      text: "Mengerti",
                       onPress: () =>
                         navigation.reset({
                           index: 0,

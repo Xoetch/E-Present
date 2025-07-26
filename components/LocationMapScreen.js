@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, Dimensions, Alert } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import LottieView from "lottie-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import API from "../utils/ApiConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from "../utils/CustomAlert";
 
 const { width, height } = Dimensions.get("window");
 
@@ -28,9 +29,15 @@ export default function MapLocationScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Izin lokasi ditolak",
-          "Aplikasi tidak dapat mengakses lokasi."
+        CustomAlert.error(
+          "Izin Lokasi Ditolak",
+          "Aplikasi tidak dapat mengakses lokasi. Silakan aktifkan izin lokasi di pengaturan untuk melanjutkan.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.goBack()
+            }
+          ]
         );
         return;
       }
@@ -62,190 +69,118 @@ export default function MapLocationScreen() {
         );
 
         setTimeout(() => {
-          Alert.alert(
-            "Gagal",
-            `Jarak Anda (${Math.round(jarak)} m) melebihi batas radius.`,
-            [{ text: "OK", onPress: () => navigation.navigate("CameraScreen") }]
+          CustomAlert.warning(
+            "Jarak Terlalu Jauh",
+            `Jarak Anda (${Math.round(jarak)} m) melebihi batas radius maksimal ${MAX_DISTANCE_METERS} m. Silakan mendekati area kantor untuk melakukan absensi.`,
+            [
+              {
+                text: "Coba Lagi",
+                onPress: () => navigation.navigate("CameraScreen")
+              }
+            ]
           );
         }, 2000);
       }
     })();
   }, []);
 
-// const submitAbsensi = async (photoUri, userData) => {
-//   const now = new Date();
-//   const jam = now.toTimeString().split(" ")[0];
+  const submitAbsensi = async (photoUri, userData) => {
+    try {
+      const storedTime = await AsyncStorage.getItem("serverTime");
+      const now = storedTime ? new Date(storedTime) : new Date();
+      const jam = now.toTimeString().split(" ")[0];
 
-//   // Tentukan status_kehadiran
-//   const shiftTimes = {
-//     "SFM-OP01": { start: "18:00:00", end: "03:00:00" },
-//     "SFP-OP01": { start: "14:25:00", end: "14:30:00" },
-//   };
+      // Ambil shift start & end dari userData, bukan hardcode
+      const shiftStart = userData.shift_start; // Contoh: "18:00:00"
+      const shiftEnd = userData.shift_end;     // Contoh: "03:00:00"
+      const shift = userData.id_shift;
 
-// const shift = userData.id_shift;
-// const shiftStart = shiftTimes[shift]?.start;
-// const shiftEnd = shiftTimes[shift]?.end;
+      let status_kehadiran = "Hadir";
 
-// let status_kehadiran = "Hadir";
+      if (shiftStart && shiftEnd) {
+        const [sh, sm, ss] = shiftStart.split(":").map(Number);
+        const [eh, em, es] = shiftEnd.split(":").map(Number);
 
-// if (shiftStart && shiftEnd) {
-//   const [sh, sm, ss] = shiftStart.split(":").map(Number);
-//   const [eh, em, es] = shiftEnd.split(":").map(Number);
+        const shiftStartSeconds = sh * 3600 + sm * 60 + ss;
+        const shiftEndSeconds = eh * 3600 + em * 60 + es;
+        const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
-//   const shiftStartSeconds = sh * 3600 + sm * 60 + ss;
-//   const shiftEndSeconds = eh * 3600 + em * 60 + es;
-//   const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        if (currentSeconds > shiftStartSeconds && currentSeconds <= shiftEndSeconds) {
+          status_kehadiran = "Terlambat";
+        }
 
-//   if (currentSeconds > shiftStartSeconds && currentSeconds <= shiftEndSeconds) {
-//     status_kehadiran = "Terlambat";
-//   }
-
-//   if (currentSeconds > shiftEndSeconds) {
-//     status_kehadiran = "Hadir"; 
-//   }
-// }
-
-
-
-//   const formData = new FormData();
-//   formData.append("file", {
-//     uri: photoUri,
-//     type: "image/jpeg",
-//     name: `absen_${Date.now()}.jpg`,
-//   });
-
-//   formData.append("absensi", {
-//     string: JSON.stringify({
-//       id_pengguna: userData.id_pengguna,
-//       jam: jam,
-//       shift_kerja: shift,
-//       status_kehadiran: status_kehadiran,
-//     }),
-//     name: "absensi",
-//     type: "application/json",
-//   });
-
-// //   formData.append("absensi", JSON.stringify({
-// //   id_pengguna: userData.id_pengguna,
-// //   jam: jam,
-// //   shift_kerja: shift,
-// //   status_kehadiran: status_kehadiran,
-// // }));
-
-//   console.log("FormData dikirim: ", formData);
-
-
-
-//   try {
-//     const response = await fetch(API.ABSEN, {
-//       method: "POST",
-//       headers: { "Content-Type": "multipart/form-data" },
-//       body: formData,
-//     });
-
-//     const result = await response.json();
-
-//       if (result.status === 200) {
-//         Alert.alert("Sukses", result.message, [
-//           {
-//             text: "OK",
-//             onPress: () =>
-//               navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-//           },
-//         ]);
-//       } else {
-//         Alert.alert("Gagal", result.message, [
-//           {
-//             text: "OK",
-//             onPress: () =>
-//               navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-//           },
-//         ]);
-//       }
-//     } catch (err) {
-//       Alert.alert("Error", "Terjadi kesalahan saat mengirim absensi");
-//     }
-//   };
-const submitAbsensi = async (photoUri, userData) => {
-  try {
-    const storedTime = await AsyncStorage.getItem("serverTime");
-    const now = storedTime ? new Date(storedTime) : new Date();
-    const jam = now.toTimeString().split(" ")[0];
-
-    // Ambil shift start & end dari userData, bukan hardcode
-    const shiftStart = userData.shift_start; // Contoh: "18:00:00"
-    const shiftEnd = userData.shift_end;     // Contoh: "03:00:00"
-    const shift = userData.id_shift;
-
-    let status_kehadiran = "Hadir";
-
-    if (shiftStart && shiftEnd) {
-      const [sh, sm, ss] = shiftStart.split(":").map(Number);
-      const [eh, em, es] = shiftEnd.split(":").map(Number);
-
-      const shiftStartSeconds = sh * 3600 + sm * 60 + ss;
-      const shiftEndSeconds = eh * 3600 + em * 60 + es;
-      const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-      if (currentSeconds > shiftStartSeconds && currentSeconds <= shiftEndSeconds) {
-        status_kehadiran = "Terlambat";
+        if (currentSeconds > shiftEndSeconds) {
+          status_kehadiran = "Hadir";
+        }
       }
 
-      if (currentSeconds > shiftEndSeconds) {
-        status_kehadiran = "Hadir";
+      const formData = new FormData();
+      formData.append("file", {
+        uri: photoUri,
+        type: "image/jpeg",
+        name: `absen_${Date.now()}.jpg`,
+      });
+
+      formData.append("absensi", {
+        string: JSON.stringify({
+          id_pengguna: userData.id_pengguna,
+          jam: jam,
+          shift_kerja: shift,
+          status_kehadiran: status_kehadiran,
+        }),
+        name: "absensi",
+        type: "application/json",
+      });
+
+      console.log("FormData dikirim: ", formData);
+
+      const response = await fetch(API.ABSEN, {
+        method: "POST",
+        headers: { "Content-Type": "multipart/form-data" },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.status === 200) {
+        CustomAlert.success(
+          "Absensi Berhasil!",
+          `${result.message}\n\nStatus: ${status_kehadiran}\nWaktu: ${jam}`,
+          [
+            {
+              text: "OK",
+              onPress: () =>
+                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+            },
+          ]
+        );
+      } else {
+        CustomAlert.error(
+          "Absensi Gagal",
+          result.message || "Terjadi kesalahan saat memproses absensi. Silakan coba lagi.",
+          [
+            {
+              text: "Coba Lagi",
+              onPress: () =>
+                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+            },
+          ]
+        );
       }
+    } catch (err) {
+      console.error("Submit Error:", err);
+      CustomAlert.error(
+        "Kesalahan Jaringan",
+        "Terjadi kesalahan saat mengirim absensi. Periksa koneksi internet Anda dan coba lagi.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     }
-
-    const formData = new FormData();
-    formData.append("file", {
-      uri: photoUri,
-      type: "image/jpeg",
-      name: `absen_${Date.now()}.jpg`,
-    });
-
-    formData.append("absensi", {
-      string: JSON.stringify({
-        id_pengguna: userData.id_pengguna,
-        jam: jam,
-        shift_kerja: shift,
-        status_kehadiran: status_kehadiran,
-      }),
-      name: "absensi",
-      type: "application/json",
-    });
-
-    console.log("FormData dikirim: ", formData);
-
-    const response = await fetch(API.ABSEN, {
-      method: "POST",
-      headers: { "Content-Type": "multipart/form-data" },
-      body: formData,
-    });
-
-    const result = await response.json();
-
-    if (result.status === 200) {
-      Alert.alert("Sukses", result.message, [
-        {
-          text: "OK",
-          onPress: () =>
-            navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-        },
-      ]);
-    } else {
-      Alert.alert("Gagal", result.message, [
-        {
-          text: "OK",
-          onPress: () =>
-            navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-        },
-      ]);
-    }
-  } catch (err) {
-    Alert.alert("Error", "Terjadi kesalahan saat mengirim absensi");
-    console.error("Submit Error:", err);
-  }
-};
+  };
 
   const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
     const R = 6371000;
