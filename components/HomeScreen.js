@@ -49,109 +49,12 @@ export default function HomeScreen({ navigation }) {
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
 
-  const [recentAttendance, setRecentAttendance] = useState([]);
-
-  
-
-  const mapLabelToTranslationKey = (apiLabel) => {
-    const normalizedLabel = apiLabel.toLowerCase();
-    if (normalizedLabel.includes("alfa") || normalizedLabel.includes("alpa")) return "general.alfa";
-    if (normalizedLabel.includes("terlambat")) return "history.telat";
-    if (normalizedLabel.includes("tidak absen pulang")) return "history.tidakAbsen";
-    if (normalizedLabel.includes("izin")) return "general.izin";
-    if (normalizedLabel.includes("hadir")) return "general.hadir";
-    return "general.lain";
-  };
-
-  const getColorByStatus = (translationKey) => {
-    switch (translationKey) {
-      case "general.alfa":
-        return "#F44336";
-      case "history.telat":
-        return "#FF7043";
-      case "history.tidakAbsen":
-        return "#FF8A65";
-      case "general.izin":
-        return "#FFC107";
-      case "general.hadir":
-        return "#4CAF50";
-      default:
-        return "#9E9E9E";
-    }
-  };
-
-  // Responsive Pie Chart dengan ukuran dinamis
-  const ResponsivePieChart = ({ data }) => {
-    // Hitung ukuran berdasarkan screen width
-    const cardPadding = 40; // padding kiri kanan card (20 * 2)
-    const chartContainerPadding = 20; // padding dalam chartContainer (10 * 2)
-    const availableWidth = screenWidth - cardPadding - chartContainerPadding;
-    
-    // Bagi ruang antara chart dan legend (40% untuk chart, 60% untuk legend)
-    const chartWidth = Math.min(availableWidth * 0.4, 140); // maksimal 140
-    const chartSize = Math.max(chartWidth, 100); // minimal 100
-    
-    const radius = chartSize / 2;
-    const center = radius;
-
-    const total = data.reduce((sum, item) => sum + item.y, 0);
-
-    if (total === 0) return null;
-
-    let currentAngle = -90;
-
-    const createPath = (startAngle, endAngle, outerRadius) => {
-      const startAngleRad = (startAngle * Math.PI) / 180;
-      const endAngleRad = (endAngle * Math.PI) / 180;
-
-      const x1 = center + outerRadius * Math.cos(startAngleRad);
-      const y1 = center + outerRadius * Math.sin(startAngleRad);
-      const x2 = center + outerRadius * Math.cos(endAngleRad);
-      const y2 = center + outerRadius * Math.sin(endAngleRad);
-
-      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-      return `M ${center} ${center} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-    };
-
-    return (
-      <View style={[styles.pieChartWrapper, { width: chartSize, height: chartSize }]}>
-        <Svg width={chartSize} height={chartSize}>
-          {data.map((item, index) => {
-            const percentage = (item.y / total) * 100;
-            const angle = (percentage / 100) * 360;
-            const endAngle = currentAngle + angle;
-
-            const path = createPath(currentAngle, endAngle, radius);
-            currentAngle = endAngle;
-
-            return <Path key={index} d={path} fill={item.fill} stroke="#fff" strokeWidth="2" />;
-          })}
-        </Svg>
-      </View>
-    );
-  };
-
-  const ResponsiveLegend = ({ data }) => {
-    const total = data.reduce((sum, item) => sum + item.y, 0);
-
-    return (
-      <View style={styles.responsiveLegendContainer}>
-        {data.map((item, index) => (
-          <View key={index} style={styles.responsiveLegendItem}>
-            <View style={[styles.legendColor, { backgroundColor: item.fill }]} />
-            <View style={styles.legendTextContainer}>
-              <Text style={styles.legendText} numberOfLines={2}>
-                {item.label}
-              </Text>
-              <Text style={styles.legendValue}>
-                {item.y} {t("general.hari")} ({((item.y / total) * 100).toFixed(1)}%)
-              </Text>
-            </View>
-          </View>
-        ))}
-      </View>
-    );
+  const formatToAMPM = (time24) => {
+    if (!time24) return "-";
+    const [hourStr, minute] = time24.split(":");
+    const hour = parseInt(hourStr);
+    // const suffix = hour >= 12 ;
+    return `${hourStr}:${minute} `;
   };
 
   useEffect(() => {
@@ -234,7 +137,7 @@ export default function HomeScreen({ navigation }) {
           if (!result?.data) return;
 
           const todayEntry = result.data.find((item) => item.tanggal === today);
-          
+
           if (todayEntry) {
             setTodayAttendance({
               jam_masuk: todayEntry.jam_masuk || null,
@@ -296,33 +199,21 @@ export default function HomeScreen({ navigation }) {
     return isNationalHoliday || isWeekend;
   }, [holidays, currentDateStr]);
 
-  const isAfterShift = useMemo(() => {
-    if (userData.shift_selesai) {
-      const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
-      const now = new Date();
-      const batasAkhir = new Date(now);
-      batasAkhir.setHours(endHour, endMinute, 0, 0);
-      return now >= batasAkhir;
-    }
-    return false;
-  }, [userData.shift_selesai, currentTime]);
-
   const isAbsenDisabled = useMemo(() => {
     if (userData.shift_selesai) {
-      
-      if (todayAttendance.jam_masuk == null) {
-        return isAfterShift;
-      }
       const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
       const now = new Date();
       const batasAbsen = new Date(now);
+      
+      if (todayAttendance.jam_masuk == null) {
+        batasAbsen.setHours(endHour, endMinute, 0, 0);
+        return now >= batasAbsen;
+      }
       batasAbsen.setHours(endHour + 1, endMinute, 0, 0); // shift_selesai + 1 jam
       return now >= batasAbsen;
     }
     return false;
   }, [userData.shift_selesai, todayAttendance.jam_masuk, currentDateStr]);
-
-  
 
 
   const handleNavigation = (screenName) => {
@@ -377,10 +268,10 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                (isAbsenDisabled) && { opacity: 0.5 },
+                (isTodayHoliday || isAbsenDisabled) && { opacity: 0.5 },
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isAbsenDisabled}
+              disabled={isTodayHoliday || isAbsenDisabled}
             >
               <View
                 style={[
@@ -414,7 +305,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
                 <Text style={styles.attendanceTime}>
                   {todayAttendance.jam_masuk
-                    ? todayAttendance.jam_masuk.slice(0, 5)
+                    ? formatToAMPM(todayAttendance.jam_masuk)
                     : "-"}
                 </Text>
               </View>
@@ -427,8 +318,8 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_keluar
-                    ? todayAttendance.jam_keluar.slice(0, 5)
+                  {todayAttendance.jam_masuk
+                    ? formatToAMPM(todayAttendance.jam_keluar)
                     : "-"}
                 </Text>
               </View>
@@ -478,7 +369,6 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
-        isAfterShift={isAfterShift}
       />
     </View>
   );

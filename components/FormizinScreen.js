@@ -24,8 +24,7 @@ const { height } = Dimensions.get("window");
 
 export default function FormizinPopup({
   visible,
-  onClose,
-  isAfterShift
+  onClose
 }) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -342,10 +341,8 @@ export default function FormizinPopup({
                 style={[
                   styles.toggleButton,
                   jenis === "PART" && styles.toggleButtonSelected,
-                  isAfterShift && { opacity: 0.5 }, // tambahkan style disabled
                 ]}
-                onPress={() => !isAfterShift && setJenis("PART")}
-                disabled={isAfterShift}
+                onPress={() => setJenis("PART")}
               >
                 <Text
                   style={
