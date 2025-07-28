@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
@@ -93,7 +93,7 @@ export default function CameraScreen() {
       const end = eh * 3600 + em * 60 + es;
       const oneHour = 3600;
 
-      const isAfter = currentInSeconds > end;
+      const isAfter = currentInSeconds >= end;
       setIsAfterShift(isAfter);
 
       const late = currentInSeconds > start;
@@ -163,6 +163,76 @@ export default function CameraScreen() {
     }, [])
   );
 
+  useEffect(() => {
+    if (!userData || !userData.jam_shift) return;
+
+    const updateShiftStatus = () => {
+      const [jam_masuk, jam_pulang] = userData.jam_shift
+        .split(" - ")
+        .map((jam) => jam.trim() + ":00");
+
+      const now = new Date();
+      const currentInSeconds =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+      const [sh, sm, ss] = jam_masuk.split(":").map(Number);
+      const [eh, em, es] = jam_pulang.split(":").map(Number);
+
+      const start = sh * 3600 + sm * 60 + ss;
+      const end = eh * 3600 + em * 60 + es;
+      const oneHour = 3600;
+
+      setIsAfterShift(currentInSeconds >= end);
+      setIsLate(currentInSeconds > start);
+      setIsBeforeEndShift(currentInSeconds < end);
+
+      let allowed = false;
+      if (start < end) {
+        allowed = currentInSeconds >= start && currentInSeconds <= end;
+      }
+      setIsAllowedTime(allowed);
+
+      setIsAfterShiftPlusOneHour(currentInSeconds > end + oneHour);
+    };
+
+    updateShiftStatus(); // initial check
+
+    const interval = setInterval(updateShiftStatus, 60000); // update setiap menit
+
+    return () => clearInterval(interval);
+  }, [userData]);
+
+  useMemo(() => {
+    if (!userData || !userData.jam_shift || !currentTime) return;
+
+    const [jam_masuk, jam_pulang] = userData.jam_shift
+      .split(" - ")
+      .map((jam) => jam.trim() + ":00");
+
+    const [sh, sm, ss] = jam_masuk.split(":").map(Number);
+    const [eh, em, es] = jam_pulang.split(":").map(Number);
+
+    const start = sh * 3600 + sm * 60 + ss;
+    const end = eh * 3600 + em * 60 + es;
+    const oneHour = 3600;
+
+    // Ambil jam, menit, detik dari currentTime
+    const [ch, cm, cs] = currentTime.split(":").map(Number);
+    const currentInSeconds = ch * 3600 + cm * 60 + cs;
+
+    setIsAfterShift(currentInSeconds >= end);
+    setIsLate(currentInSeconds > start);
+    setIsBeforeEndShift(currentInSeconds < end);
+
+    let allowed = false;
+    if (start < end) {
+      allowed = currentInSeconds >= start && currentInSeconds <= end;
+    }
+    setIsAllowedTime(allowed);
+
+    setIsAfterShiftPlusOneHour(currentInSeconds > end + oneHour);
+  }, [userData, currentTime]);
+
   if (!permission) return <View style={styles.container} />;
 
   const handleCapture = async () => {
@@ -174,6 +244,7 @@ export default function CameraScreen() {
       navigation.navigate("LocationMap", {
         photoUri: photo.uri,
         userData: userData,
+        isLate: isLate, // kirim nilai isLate sebagai props
       });
     } catch (error) {
       console.log("Capture error:", error);
@@ -228,7 +299,7 @@ export default function CameraScreen() {
 
               {!hasClockInToday &&
                 isLate &&
-                !isAfterShift(
+                !isAfterShift &&(
                   <View
                     style={[styles.warningCard, { backgroundColor: "#FFCDD2" }]}
                   >
@@ -278,6 +349,14 @@ export default function CameraScreen() {
                 Alert.alert(
                   "Terlambat Absensi",
                   "Anda sudah melewati batas waktu absensi (1 jam setelah jam pulang)."
+                );
+                return;
+              }
+
+              if (!hasClockInToday && isAfterShift) {
+                Alert.alert(
+                  "Alpa",
+                  "Anda tidak bisa absen setelah shift berakhir"
                 );
                 return;
               }

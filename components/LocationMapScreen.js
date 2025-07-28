@@ -12,7 +12,7 @@ const { width, height } = Dimensions.get("window");
 export default function MapLocationScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { photoUri, userData } = route.params;
+  const { photoUri, userData, isLate } = route.params; // terima isLate
   const animationRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [statusText, setStatusText] = useState("Mengecek lokasi Anda...");
@@ -84,26 +84,8 @@ export default function MapLocationScreen() {
       const shift = userData.id_shift;
 
       let status_kehadiran = "Hadir";
-
-      if (shiftStart && shiftEnd) {
-        const [sh, sm, ss] = shiftStart.split(":").map(Number);
-        const [eh, em, es] = shiftEnd.split(":").map(Number);
-
-        const shiftStartSeconds = sh * 3600 + sm * 60 + ss;
-        const shiftEndSeconds = eh * 3600 + em * 60 + es;
-        const currentSeconds =
-          now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-        if (
-          currentSeconds > shiftStartSeconds &&
-          currentSeconds <= shiftEndSeconds
-        ) {
-          status_kehadiran = "Terlambat";
-        } else if (currentSeconds <= shiftStartSeconds) {
-          status_kehadiran = "Hadir"; // tepat waktu atau datang lebih awal
-        } else if (currentSeconds > shiftEndSeconds) {
-          status_kehadiran = "Hadir"; // datang sangat terlambat (tapi tetap dihitung hadir)
-        }
+      if (isLate) {
+        status_kehadiran = "Terlambat";
       }
 
       const formData = new FormData();
@@ -123,8 +105,6 @@ export default function MapLocationScreen() {
         name: "absensi",
         type: "application/json",
       });
-
-      console.log("FormData dikirim: ", formData);
 
       const response = await fetch(API.ABSEN, {
         method: "POST",

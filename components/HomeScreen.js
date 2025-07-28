@@ -1,14 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import API from "../utils/ApiConfig";
-import WithLoader from "../utils/Loader";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { PieChart } from "react-native-chart-kit";
 import CalendarWithHoliday from "./Calendar";
 import FormizinPopup from "./FormizinScreen";
+import WithLoader from "../utils/Loader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API from "../utils/ApiConfig";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -21,7 +30,7 @@ export default function HomeScreen({ navigation }) {
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const dd = String(now.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
+    return `${yyyy}-${mm}-${dd}`; // hasilnya format YYYY-MM-DD sesuai zona lokal
   });
 
   const [todayAttendance, setTodayAttendance] = useState({
@@ -49,13 +58,6 @@ export default function HomeScreen({ navigation }) {
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
 
-  const formatToAMPM = (time24) => {
-    if (!time24) return "-";
-    const [hourStr, minute] = time24.split(":");
-    const hour = parseInt(hourStr);
-    // const suffix = hour >= 12 ;
-    return `${hourStr}:${minute} `;
-  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -63,7 +65,7 @@ export default function HomeScreen({ navigation }) {
       if (now !== currentDateStr) {
         setCurrentDateStr(now);
       }
-    }, 60 * 1000);
+    }, 60 * 1000); // Cek setiap 1 menit
 
     return () => clearInterval(interval);
   }, [currentDateStr]);
@@ -127,8 +129,12 @@ export default function HomeScreen({ navigation }) {
     useCallback(() => {
       const fetchAttendanceHistory = async () => {
         try {
-          const userId = userData?.id_pengguna;
-
+          const dataString = await AsyncStorage.getItem("userData");
+          let userId = null;
+          if (dataString) {
+            const data = JSON.parse(dataString);
+            userId = data.id_pengguna;
+          }
           if (!userId) return;
 
           const response = await fetch(`${API.HISTORY}/${userId}`);
@@ -137,7 +143,7 @@ export default function HomeScreen({ navigation }) {
           if (!result?.data) return;
 
           const todayEntry = result.data.find((item) => item.tanggal === today);
-
+          
           if (todayEntry) {
             setTodayAttendance({
               jam_masuk: todayEntry.jam_masuk || null,
@@ -146,38 +152,50 @@ export default function HomeScreen({ navigation }) {
           } else {
             setTodayAttendance({ jam_masuk: null, jam_keluar: null });
           }
+          console.log("Attendance for today:", todayAttendance);
 
           // FETCH PIE CHART
           const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
           const pieJson = await pieRes.json();
 
-          const pieData = pieJson.labels
-            .map((label, index) => {
-              const translationKey = mapLabelToTranslationKey(label);
-              return {
-                x: index,
-                y: pieJson.data[index],
-                label: t(translationKey),
-                fill: getColorByStatus(translationKey),
-              };
-            })
-            .filter((item) => item.y > 0);
+          const getColorByStatus = (label) => {
+            const normalizedLabel = label.toLowerCase();
+            if (
+              normalizedLabel.includes("alfa") ||
+              normalizedLabel.includes("alpa")
+            )
+              return "#F44336";
+            if (normalizedLabel.includes("izin")) return "#FFC107";
+            if (normalizedLabel.includes("hadir")) return "#4CAF50";
+            if (normalizedLabel.includes("sakit")) return "#42A5F5";
+            return "#9E9E9E";
+          };
+
+          const pieData = pieJson.labels.map((label, index) => ({
+            name: label,
+            population: pieJson.data[index],
+            color: getColorByStatus(label),
+            legendFontColor: "#333",
+            legendFontSize: 14,
+          }));
 
           setChartData(pieData);
+          console.log(pieData);
         } catch (err) {
           console.log("Error fetching attendance history:", err);
         }
       };
 
       fetchAttendanceHistory();
-    }, [currentDateStr, t])
+    }, [currentDateStr])
   );
 
 
+  // Time ticker only (no user data here anymore)
   const getCurrentTimeString = () => {
     const interval = setInterval(() => {
       const now = new Date();
-      const hours = now.getHours().toString().padStart(2, "0");
+      const hours = now.getHours().toString().padStart(2, "0"); // tambahkan padStart
       const minutes = now.getMinutes().toString().padStart(2, "0");
       setCurrentTime(`${hours}:${minutes}`);
       setLoadingTime(false);
@@ -188,7 +206,7 @@ export default function HomeScreen({ navigation }) {
 
   const isTodayHoliday = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
-    const dayOfWeek = new Date().getDay();
+    const dayOfWeek = new Date().getDay(); // 0 = Minggu, 6 = Sabtu
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isNationalHoliday = holidays.some((item) => {
       const start = new Date(item.tanggal_mulai);
@@ -199,21 +217,33 @@ export default function HomeScreen({ navigation }) {
     return isNationalHoliday || isWeekend;
   }, [holidays, currentDateStr]);
 
-  const isAbsenDisabled = useMemo(() => {
+  const isAfterShift = useMemo(() => {
     if (userData.shift_selesai) {
       const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
       const now = new Date();
-      const batasAbsen = new Date(now);
+      const batasAkhir = new Date(now);
+      batasAkhir.setHours(endHour, endMinute, 0, 0);
+      return now >= batasAkhir;
+    }
+    return false;
+  }, [userData.shift_selesai, currentTime]);
+
+  const isAbsenDisabled = useMemo(() => {
+    if (userData.shift_selesai) {
       
       if (todayAttendance.jam_masuk == null) {
-        batasAbsen.setHours(endHour, endMinute, 0, 0);
-        return now >= batasAbsen;
+        return isAfterShift;
       }
+      const [endHour, endMinute] = userData.shift_selesai.split(":").map(Number);
+      const now = new Date();
+      const batasAbsen = new Date(now);
       batasAbsen.setHours(endHour + 1, endMinute, 0, 0); // shift_selesai + 1 jam
       return now >= batasAbsen;
     }
     return false;
   }, [userData.shift_selesai, todayAttendance.jam_masuk, currentDateStr]);
+
+  
 
 
   const handleNavigation = (screenName) => {
@@ -230,6 +260,7 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.wrapper}>
       <View style={styles.blueBackground} />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Enhanced Header Section */}
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <Image
@@ -247,9 +278,15 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <Animated.View style={[styles.whiteContainer, { transform: [{ translateY: animatedValue }] }]}>
+        <Animated.View
+          style={[
+            styles.whiteContainer,
+            { transform: [{ translateY: animatedValue }] },
+          ]}
+        >
           <View style={styles.greyLine} />
 
+          {/* Time Section */}
           <View style={styles.timeSection}>
             <WithLoader loading={loadingTime}>
               <Text style={styles.time}>{currentTime}</Text>
@@ -264,14 +301,15 @@ export default function HomeScreen({ navigation }) {
             </WithLoader>
           </View>
 
+          {/* Action Buttons Section */}
           <View style={styles.actionCard}>
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                (isTodayHoliday || isAbsenDisabled) && { opacity: 0.5 },
+                (isAbsenDisabled) && { opacity: 0.5 },
               ]}
               onPress={() => handleNavigation("CameraScreen")}
-              disabled={isTodayHoliday || isAbsenDisabled}
+              disabled={isAbsenDisabled}
             >
               <View
                 style={[
@@ -284,14 +322,23 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.actionLabel}>{t("general.absen")}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton} onPress={() => setShowFormIzin(true)}>
-              <View style={[styles.actionIconContainer, styles.documentIconContainer]}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setShowFormIzin(true)}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  styles.documentIconContainer,
+                ]}
+              >
                 <Ionicons name="document-text-outline" size={24} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>{t("general.izin")}</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Today's Attendance Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{t("home.todayInfo")}</Text>
@@ -305,7 +352,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.attendanceLabel}>{t("home.checkIn")}</Text>
                 <Text style={styles.attendanceTime}>
                   {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_masuk)
+                    ? todayAttendance.jam_masuk.slice(0, 5)
                     : "-"}
                 </Text>
               </View>
@@ -318,49 +365,59 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.attendanceLabel}>{t("home.checkOut")}</Text>
                 <Text style={styles.attendanceTime}>
-                  {todayAttendance.jam_masuk
-                    ? formatToAMPM(todayAttendance.jam_keluar)
+                  {todayAttendance.jam_keluar
+                    ? todayAttendance.jam_keluar.slice(0, 5)
                     : "-"}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Statistics Card - RESPONSIVE VERSION */}
+          {/* Statistics Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.rowBetween}>
                 <Text style={styles.cardTitle}>{t("home.statistik")}</Text>
-                <TouchableOpacity onPress={() => handleNavigation("History")} style={styles.linkContainer}>
+                <TouchableOpacity
+                  onPress={() => handleNavigation("History")}
+                  style={styles.linkContainer}
+                >
                   <Text style={styles.link}>{t("home.lihat")}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#2E7BE8" />
                 </TouchableOpacity>
               </View>
               <View style={styles.cardTitleUnderline} />
             </View>
-
-            {chartData.length > 0 ? (
-              <View style={styles.responsiveChartContainer}>
-                <View style={styles.responsiveChartLayout}>
-                  <ResponsivePieChart data={chartData} />
-                  <ResponsiveLegend data={chartData} />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Ionicons name="pie-chart-outline" size={48} color="#E0E0E0" />
-                <Text style={styles.noDataText}>Belum ada data statistik</Text>
-              </View>
-            )}
+            <View style={styles.chartContainer}>
+              <PieChart
+                data={chartData}
+                width={screenWidth - 40}
+                height={150}
+                chartConfig={{
+                  backgroundColor: "#fff",
+                  backgroundGradientFrom: "#fff",
+                  backgroundGradientTo: "#fff",
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                }}
+                accessor={"population"}
+                backgroundColor={"transparent"}
+                paddingLeft={"10"}
+                absolute
+              />
+            </View>
           </View>
 
+          {/* Calendar Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{t("home.calendar")}</Text>
               <View style={styles.cardTitleUnderline} />
             </View>
             <View style={styles.calendarContainer}>
-              <CalendarWithHoliday holidays={holidays} onHolidaysChange={setHolidays} />
+              <CalendarWithHoliday
+                holidays={holidays}
+                onHolidaysChange={setHolidays}
+              />
             </View>
           </View>
         </Animated.View>
@@ -369,6 +426,7 @@ export default function HomeScreen({ navigation }) {
       <FormizinPopup
         visible={showFormIzin}
         onClose={() => setShowFormIzin(false)}
+        isAfterShift={isAfterShift}
       />
     </View>
   );
@@ -473,6 +531,9 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
   },
+  disabledButton: {
+    opacity: 0.5,
+  },
   actionIconContainer: {
     width: 56,
     height: 56,
@@ -547,69 +608,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     marginHorizontal: 20,
   },
-  // RESPONSIVE CHART STYLES
-  responsiveChartContainer: {
-    paddingVertical: 10,
-  },
-  responsiveChartLayout: {
-    flexDirection: "row",
+  chartContainer: {
     alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 5,
-    gap: 15,
-  },
-  pieChartWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0, // Prevent shrinking
-  },
-  responsiveLegendContainer: {
-    flex: 1,
-    paddingLeft: 10,
-    minWidth: 0, // Allow shrinking if needed
-  },
-  responsiveLegendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 3,
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-    backgroundColor: "#F8F9FA",
-  },
-  legendColor: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-    flexShrink: 0,
-  },
-  legendTextContainer: {
-    flex: 1,
-    minWidth: 0, // Allow text to wrap
-  },
-  legendText: {
-    fontSize: 10,
-    color: "#333",
-    fontWeight: "500",
-    marginBottom: 1,
-    flexWrap: "wrap",
-  },
-  legendValue: {
-    fontSize: 9,
-    color: "#8E8E93",
-    fontWeight: "400",
-  },
-  noDataContainer: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  noDataText: {
-    fontSize: 14,
-    color: "#8E8E93",
-    marginTop: 12,
-    fontWeight: "500",
+    paddingVertical: 8,
+    overflow: "hidden", // ← Ini penting agar label tidak keluar
   },
   rowBetween: {
     flexDirection: "row",
@@ -625,6 +627,49 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: "#2E7BE8",
     fontWeight: "600",
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  historyIconContainer: {
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  checkInIcon: {
+    backgroundColor: "#4CAF50",
+  },
+  checkOutIcon: {
+    backgroundColor: "#F44336",
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyType: {
+    fontWeight: "bold",
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  historyDate: {
+    color: "#8E8E93",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  historyTime: {
+    fontWeight: "bold",
+    fontSize: 15,
   },
   calendarContainer: {
     borderRadius: 12,
