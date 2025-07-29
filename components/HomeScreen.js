@@ -4,7 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { PieChart } from "react-native-chart-kit";
 import API from "../utils/ApiConfig";
 import WithLoader from "../utils/Loader";
 import CalendarWithHoliday from "./Calendar";
@@ -85,76 +85,70 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Responsive Pie Chart dengan ukuran dinamis
-  const ResponsivePieChart = ({ data }) => {
-    // Hitung ukuran berdasarkan screen width
-    const cardPadding = 40; // padding kiri kanan card (20 * 2)
-    const chartContainerPadding = 20; // padding dalam chartContainer (10 * 2)
-    const availableWidth = screenWidth - cardPadding - chartContainerPadding;
-    
-    // Bagi ruang antara chart dan legend (40% untuk chart, 60% untuk legend)
-    const chartWidth = Math.min(availableWidth * 0.4, 140); // maksimal 140
-    const chartSize = Math.max(chartWidth, 100); // minimal 100
-    
-    const radius = chartSize / 2;
-    const center = radius;
+  // Chart configuration for react-native-chart-kit
+  const chartConfig = {
+    backgroundColor: "#ffffff",
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    style: {
+      borderRadius: 16,
+    },
+  };
 
-    const total = data.reduce((sum, item) => sum + item.y, 0);
+  // Calculate responsive chart dimensions for side-by-side layout
+  const getChartDimensions = () => {
+    const cardPadding = 100; // padding kiri kanan card (20 * 2)
+    const availableWidth = screenWidth - cardPadding;
+    // Increase chart width to prevent cutting and ensure proper display
+    const chartWidth = Math.min(availableWidth * 0.55, 180);
+    const chartHeight = chartWidth;
 
-    if (total === 0) return null;
-
-    let currentAngle = -90;
-
-    const createPath = (startAngle, endAngle, outerRadius) => {
-      const startAngleRad = (startAngle * Math.PI) / 180;
-      const endAngleRad = (endAngle * Math.PI) / 180;
-
-      const x1 = center + outerRadius * Math.cos(startAngleRad);
-      const y1 = center + outerRadius * Math.sin(startAngleRad);
-      const x2 = center + outerRadius * Math.cos(endAngleRad);
-      const y2 = center + outerRadius * Math.sin(endAngleRad);
-
-      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-      return `M ${center} ${center} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+    return {
+      width: chartWidth,
+      height: chartHeight,
     };
-
-    return (
-      <View style={[styles.pieChartWrapper, { width: chartSize, height: chartSize }]}>
-        <Svg width={chartSize} height={chartSize}>
-          {data.map((item, index) => {
-            const percentage = (item.y / total) * 100;
-            const angle = (percentage / 100) * 360;
-            const endAngle = currentAngle + angle;
-
-            const path = createPath(currentAngle, endAngle, radius);
-            currentAngle = endAngle;
-
-            return <Path key={index} d={path} fill={item.fill} stroke="#fff" strokeWidth="2" />;
-          })}
-        </Svg>
-      </View>
-    );
   };
 
   const ResponsiveLegend = ({ data }) => {
-    const total = data.reduce((sum, item) => sum + item.y, 0);
+    if (!data || data.length === 0) {
+      return (
+        <View style={styles.responsiveLegendContainer}>
+          <Text style={styles.noDataText}>Tidak ada data untuk ditampilkan</Text>
+        </View>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + (item.population || 0), 0);
+
+    if (total === 0) {
+      return (
+        <View style={styles.responsiveLegendContainer}>
+          <Text style={styles.noDataText}>Total data kosong</Text>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.responsiveLegendContainer}>
-        {data.map((item, index) => (
-          <View key={index} style={styles.responsiveLegendItem}>
-            <View style={[styles.legendColor, { backgroundColor: item.fill }]} />
-            <View style={styles.legendTextContainer}>
-              <Text style={styles.legendText} numberOfLines={2}>
-                {item.label}
-              </Text>
-              <Text style={styles.legendValue}>
-                {item.y} {t("general.hari")} ({((item.y / total) * 100).toFixed(1)}%)
-              </Text>
+        {data.map((item, index) => {
+          const percentage = total > 0 ? ((item.population / total) * 100).toFixed(1) : 0;
+
+          return (
+            <View key={index} style={styles.responsiveLegendItem}>
+              <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+              <View style={styles.legendTextContainer}>
+                <Text style={styles.legendText} numberOfLines={1}>
+                  {item.name || "Unknown"}
+                </Text>
+                <Text style={styles.legendValue}>
+                  {item.population || 0} {t("general.hari")} ({percentage}%)
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     );
   };
@@ -229,19 +223,29 @@ export default function HomeScreen({ navigation }) {
           const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
           const pieJson = await pieRes.json();
 
-          const pieData = pieJson.labels
-            .map((label, index) => {
-              const translationKey = mapLabelToTranslationKey(label);
-              return {
-                x: index,
-                y: pieJson.data[index],
-                label: t(translationKey),
-                fill: getColorByStatus(translationKey),
-              };
-            })
-            .filter((item) => item.y > 0);
+          // Transform data for react-native-chart-kit PieChart
+          if (pieJson.labels && pieJson.data && Array.isArray(pieJson.labels) && Array.isArray(pieJson.data)) {
+            const pieData = pieJson.labels
+              .map((label, index) => {
+                const translationKey = mapLabelToTranslationKey(label);
+                const translatedName = t(translationKey);
+                const population = pieJson.data[index] || 0;
 
-          setChartData(pieData);
+                return {
+                  name: translatedName,
+                  population: population,
+                  color: getColorByStatus(translationKey),
+                  legendFontColor: "#333333",
+                  legendFontSize: 12,
+                };
+              })
+              .filter((item) => item.population > 0);
+
+            setChartData(pieData);
+          } else {
+            console.log("Invalid pie chart data structure");
+            setChartData([]);
+          }
 
           const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
           const izinJson = await izinRes.json();
@@ -251,6 +255,7 @@ export default function HomeScreen({ navigation }) {
           }
         } catch (err) {
           console.log("Error fetching attendance history:", err);
+          setChartData([]);
         }
       };
 
@@ -431,7 +436,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Statistics Card - RESPONSIVE VERSION */}
+          {/* Statistics Card with side-by-side layout */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.rowBetween}>
@@ -445,9 +450,22 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             {chartData.length > 0 ? (
-              <View style={styles.responsiveChartContainer}>
-                <View style={styles.responsiveChartLayout}>
-                  <ResponsivePieChart data={chartData} />
+              <View style={styles.chartContainer}>
+                <View style={styles.chartSection}>
+                  <PieChart
+                    data={chartData}
+                    width={getChartDimensions().width}
+                    height={getChartDimensions().height}
+                    chartConfig={chartConfig}
+                    accessor="population"
+                    backgroundColor="transparent"
+                    paddingLeft="15"
+                    center={[10, 0]}
+                    absolute={false}
+                    hasLegend={false}
+                  />
+                </View>
+                <View style={styles.legendSection}>
                   <ResponsiveLegend data={chartData} />
                 </View>
               </View>
@@ -649,59 +667,58 @@ export const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     marginHorizontal: 20,
   },
-  // RESPONSIVE CHART STYLES
-  responsiveChartContainer: {
-    paddingVertical: 10,
-  },
-  responsiveChartLayout: {
+  // Updated chart styles for side-by-side layout with proper spacing
+  chartContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 5,
-    gap: 15,
+    paddingVertical: 10,
+    minHeight: 180,
   },
-  pieChartWrapper: {
+  chartSection: {
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0, // Prevent shrinking
+    paddingRight: 10,
+  },
+  legendSection: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: "center",
   },
   responsiveLegendContainer: {
     flex: 1,
-    paddingLeft: 10,
-    minWidth: 0, // Allow shrinking if needed
   },
   responsiveLegendItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 3,
-    paddingVertical: 5,
+    marginVertical: 2,
+    paddingVertical: 4,
     paddingHorizontal: 6,
     borderRadius: 6,
     backgroundColor: "#F8F9FA",
+    minHeight: 32,
   },
   legendColor: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
     flexShrink: 0,
   },
   legendTextContainer: {
     flex: 1,
-    minWidth: 0, // Allow text to wrap
+    minWidth: 0,
   },
   legendText: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#333",
-    fontWeight: "500",
+    fontWeight: "600",
     marginBottom: 1,
     flexWrap: "wrap",
   },
   legendValue: {
     fontSize: 9,
     color: "#8E8E93",
-    fontWeight: "400",
+    fontWeight: "500",
   },
   noDataContainer: {
     alignItems: "center",
@@ -712,6 +729,7 @@ export const styles = StyleSheet.create({
     color: "#8E8E93",
     marginTop: 12,
     fontWeight: "500",
+    textAlign: "center",
   },
   rowBetween: {
     flexDirection: "row",

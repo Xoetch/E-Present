@@ -15,7 +15,9 @@
     "no": "No",
     "repeat": "Try Again",
     "lain": "Others",
-    "hari": "day"
+    "hari": "day",
+    "ok": "OK",
+    "cancel": "Cancel"
   },
   "home": {
     "statistik": "Attendance This Month",

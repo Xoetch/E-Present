@@ -15,7 +15,9 @@
     "no": "Tidak",
     "repeat": "Coba Lagi",
     "lain": "Lainnya",
-    "hari": "hari"
+    "hari": "hari",
+    "ok": "OK",
+    "cancel": "Batal",
   },
   "home": {
     "statistik": "Absensi Bulan Ini",
