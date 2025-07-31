@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, Dimensions, Alert } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import LottieView from "lottie-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import API from "../utils/ApiConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from "../utils/CustomAlert";
 
 const { width, height } = Dimensions.get("window");
 
@@ -28,9 +29,15 @@ export default function MapLocationScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Izin lokasi ditolak",
-          "Aplikasi tidak dapat mengakses lokasi."
+        CustomAlert.error(
+          "Izin Lokasi Ditolak",
+          "Aplikasi tidak dapat mengakses lokasi. Silakan aktifkan izin lokasi di pengaturan untuk melanjutkan.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.goBack()
+            }
+          ]
         );
         return;
       }
@@ -62,16 +69,21 @@ export default function MapLocationScreen() {
         );
 
         setTimeout(() => {
-          Alert.alert(
-            "Gagal",
-            `Jarak Anda (${Math.round(jarak)} m) melebihi batas radius.`,
-            [{ text: "OK", onPress: () => navigation.navigate("CameraScreen") }]
+          CustomAlert.warning(
+            "Jarak Terlalu Jauh",
+            `Jarak Anda (${Math.round(jarak)} m) melebihi batas radius maksimal ${MAX_DISTANCE_METERS} m. Silakan mendekati area kantor untuk melakukan absensi.`,
+            [
+              {
+                text: "Coba Lagi",
+                onPress: () => navigation.navigate("CameraScreen")
+              }
+            ]
           );
         }, 2000);
       }
     })();
   }, []);
-  
+
   const submitAbsensi = async (photoUri, userData) => {
     try {
       const storedTime = await AsyncStorage.getItem("serverTime");
@@ -79,8 +91,8 @@ export default function MapLocationScreen() {
       const jam = now.toTimeString().split(" ")[0];
 
       // Ambil shift start & end dari userData, bukan hardcode
-      const shiftStart = userData.shift_start; // Contoh: "07:00:00"
-      const shiftEnd = userData.shift_end; // Contoh: "16:00:00"
+      const shiftStart = userData.shift_start; // Contoh: "18:00:00"
+      const shiftEnd = userData.shift_end;     // Contoh: "03:00:00"
       const shift = userData.id_shift;
 
       let status_kehadiran = "Hadir";
@@ -115,25 +127,42 @@ export default function MapLocationScreen() {
       const result = await response.json();
 
       if (result.status === 200) {
-        Alert.alert("Sukses", result.message, [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-          },
-        ]);
+        CustomAlert.success(
+          "Absensi Berhasil!",
+          `${result.message}\n\nStatus: ${status_kehadiran}\nWaktu: ${jam}`,
+          [
+            {
+              text: "OK",
+              onPress: () =>
+                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+            },
+          ]
+        );
       } else {
-        Alert.alert("Gagal", result.message, [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
-          },
-        ]);
+        CustomAlert.error(
+          "Absensi Gagal",
+          result.message || "Terjadi kesalahan saat memproses absensi. Silakan coba lagi.",
+          [
+            {
+              text: "Coba Lagi",
+              onPress: () =>
+                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+            },
+          ]
+        );
       }
     } catch (err) {
-      Alert.alert("Error", "Terjadi kesalahan saat mengirim absensi");
       console.error("Submit Error:", err);
+      CustomAlert.error(
+        "Kesalahan Jaringan",
+        "Terjadi kesalahan saat mengirim absensi. Periksa koneksi internet Anda dan coba lagi.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     }
   };
 

@@ -58,6 +58,109 @@ export default function HomeScreen({ navigation }) {
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
 
+  const [recentAttendance, setRecentAttendance] = useState([]);
+
+  const formatToAMPM = (time24) => {
+    if (!time24) return "-";
+    const [hourStr, minute] = time24.split(":");
+    const hour = parseInt(hourStr);
+    return `${hourStr}:${minute} `;
+  };
+
+  const mapLabelToTranslationKey = (apiLabel) => {
+    const normalizedLabel = apiLabel.toLowerCase();
+    if (normalizedLabel.includes("alfa") || normalizedLabel.includes("alpa")) return "general.alfa";
+    if (normalizedLabel.includes("terlambat")) return "history.telat";
+    if (normalizedLabel.includes("tidak absen pulang")) return "history.tidakAbsen";
+    if (normalizedLabel.includes("izin")) return "general.izin";
+    if (normalizedLabel.includes("hadir")) return "general.hadir";
+    return "general.lain";
+  };
+
+  const getColorByStatus = (translationKey) => {
+    switch (translationKey) {
+      case "general.alfa":
+        return "#F44336";
+      case "history.telat":
+        return "#FF7043";
+      case "history.tidakAbsen":
+        return "#FF8A65";
+      case "general.izin":
+        return "#FFC107";
+      case "general.hadir":
+        return "#4CAF50";
+      default:
+        return "#9E9E9E";
+    }
+  };
+
+  // Chart configuration for react-native-chart-kit
+  const chartConfig = {
+    backgroundColor: "#ffffff",
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    style: {
+      borderRadius: 16,
+    },
+  };
+
+  // Calculate responsive chart dimensions for side-by-side layout
+  const getChartDimensions = () => {
+    const cardPadding = 100; // padding kiri kanan card (20 * 2)
+    const availableWidth = screenWidth - cardPadding;
+    // Increase chart width to prevent cutting and ensure proper display
+    const chartWidth = Math.min(availableWidth * 0.55, 180);
+    const chartHeight = chartWidth;
+
+    return {
+      width: chartWidth,
+      height: chartHeight,
+    };
+  };
+
+  const ResponsiveLegend = ({ data }) => {
+    if (!data || data.length === 0) {
+      return (
+        <View style={styles.responsiveLegendContainer}>
+          <Text style={styles.noDataText}>Tidak ada data untuk ditampilkan</Text>
+        </View>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + (item.population || 0), 0);
+
+    if (total === 0) {
+      return (
+        <View style={styles.responsiveLegendContainer}>
+          <Text style={styles.noDataText}>Total data kosong</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.responsiveLegendContainer}>
+        {data.map((item, index) => {
+          const percentage = total > 0 ? ((item.population / total) * 100).toFixed(1) : 0;
+
+          return (
+            <View key={index} style={styles.responsiveLegendItem}>
+              <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+              <View style={styles.legendTextContainer}>
+                <Text style={styles.legendText} numberOfLines={1}>
+                  {item.name || "Unknown"}
+                </Text>
+                <Text style={styles.legendValue}>
+                  {item.population || 0} {t("general.hari")} ({percentage}%)
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -70,7 +173,105 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, [currentDateStr]);
 
-  // Animation + userData update when screen focused
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAttendanceHistory = async () => {
+        try {
+          const userDataStr = await AsyncStorage.getItem("userData");
+          const userData = JSON.parse(userDataStr);
+          const userId = userData?.id_pengguna;
+
+          if (!userId) return;
+
+          const response = await fetch(`${API.HISTORY}/${userId}`);
+          const result = await response.json();
+
+          if (!result?.data) return;
+
+          const hadirData = result.data.filter((item) => item.status_kehadiran === "Hadir");
+
+          const todayEntry = result.data.find((item) => item.tanggal === today);
+
+          if (todayEntry) {
+            setTodayAttendance({
+              jam_masuk: todayEntry.jam_masuk || null,
+              jam_keluar: todayEntry.jam_keluar || null,
+            });
+          } else {
+            setTodayAttendance({ jam_masuk: null, jam_keluar: null });
+          }
+
+          let converted = [];
+          hadirData.forEach((item) => {
+            if (item.jam_masuk) {
+              converted.push({
+                id: `${item.tanggal}_${item.jam_masuk}_masuk`,
+                type: "Masuk Kerja",
+                time: item.jam_masuk,
+                date: item.tanggal,
+              });
+            }
+            if (item.jam_keluar) {
+              converted.push({
+                id: `${item.tanggal}_${item.jam_keluar}_pulang`,
+                type: "Pulang Kerja",
+                time: item.jam_keluar,
+                date: item.tanggal,
+              });
+            }
+          });
+
+          converted = converted.sort((a, b) => {
+            const dateTimeA = new Date(`${a.date}T${a.time}`);
+            const dateTimeB = new Date(`${b.date}T${b.time}`);
+            return dateTimeB - dateTimeA;
+          });
+
+          setRecentAttendance(converted.slice(0, 3));
+
+          const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
+          const pieJson = await pieRes.json();
+
+          // Transform data for react-native-chart-kit PieChart
+          if (pieJson.labels && pieJson.data && Array.isArray(pieJson.labels) && Array.isArray(pieJson.data)) {
+            const pieData = pieJson.labels
+              .map((label, index) => {
+                const translationKey = mapLabelToTranslationKey(label);
+                const translatedName = t(translationKey);
+                const population = pieJson.data[index] || 0;
+
+                return {
+                  name: translatedName,
+                  population: population,
+                  color: getColorByStatus(translationKey),
+                  legendFontColor: "#333333",
+                  legendFontSize: 12,
+                };
+              })
+              .filter((item) => item.population > 0);
+
+            setChartData(pieData);
+          } else {
+            console.log("Invalid pie chart data structure");
+            setChartData([]);
+          }
+
+          const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
+          const izinJson = await izinRes.json();
+          if (izinJson?.data) {
+            const existingDates = izinJson.data.map((item) => item.tanggal);
+            setDisabledDates(existingDates);
+          }
+        } catch (err) {
+          console.log("Error fetching attendance history:", err);
+          setChartData([]);
+        }
+      };
+
+      fetchAttendanceHistory();
+    }, [currentDateStr, t])
+  );
+
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
@@ -373,7 +574,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Statistics Card */}
+          {/* Statistics Card with side-by-side layout */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.rowBetween}>
@@ -388,23 +589,33 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.cardTitleUnderline} />
             </View>
-            <View style={styles.chartContainer}>
-              <PieChart
-                data={chartData}
-                width={screenWidth - 40}
-                height={150}
-                chartConfig={{
-                  backgroundColor: "#fff",
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
-                accessor={"population"}
-                backgroundColor={"transparent"}
-                paddingLeft={"10"}
-                absolute
-              />
-            </View>
+
+            {chartData.length > 0 ? (
+              <View style={styles.chartContainer}>
+                <View style={styles.chartSection}>
+                  <PieChart
+                    data={chartData}
+                    width={getChartDimensions().width}
+                    height={getChartDimensions().height}
+                    chartConfig={chartConfig}
+                    accessor="population"
+                    backgroundColor="transparent"
+                    paddingLeft="15"
+                    center={[10, 0]}
+                    absolute={false}
+                    hasLegend={false}
+                  />
+                </View>
+                <View style={styles.legendSection}>
+                  <ResponsiveLegend data={chartData} />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="pie-chart-outline" size={48} color="#E0E0E0" />
+                <Text style={styles.noDataText}>Belum ada data statistik</Text>
+              </View>
+            )}
           </View>
 
           {/* Calendar Card */}
@@ -608,10 +819,69 @@ export const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     marginHorizontal: 20,
   },
+  // Updated chart styles for side-by-side layout with proper spacing
   chartContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    overflow: "hidden", // ← Ini penting agar label tidak keluar
+    paddingVertical: 10,
+    minHeight: 180,
+  },
+  chartSection: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingRight: 10,
+  },
+  legendSection: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: "center",
+  },
+  responsiveLegendContainer: {
+    flex: 1,
+  },
+  responsiveLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    backgroundColor: "#F8F9FA",
+    minHeight: 32,
+  },
+  legendColor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+    flexShrink: 0,
+  },
+  legendTextContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  legendText: {
+    fontSize: 11,
+    color: "#333",
+    fontWeight: "600",
+    marginBottom: 1,
+    flexWrap: "wrap",
+  },
+  legendValue: {
+    fontSize: 9,
+    color: "#8E8E93",
+    fontWeight: "500",
+  },
+  noDataContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    marginTop: 12,
+    fontWeight: "500",
+    textAlign: "center",
   },
   rowBetween: {
     flexDirection: "row",

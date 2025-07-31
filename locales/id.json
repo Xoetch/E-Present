@@ -15,7 +15,9 @@
     "no": "Tidak",
     "repeat": "Coba Lagi",
     "lain": "Lainnya",
-    "hari": "hari"
+    "hari": "hari",
+    "ok": "OK",
+    "cancel": "Batal",
   },
   "home": {
     "statistik": "Absensi Bulan Ini",
@@ -113,6 +115,7 @@
   "result": {
     "error": "GAGAL!",
     "success": "BERHASIL!",
+    "warning": "PERINGATAN!",
     "desc1": "anda dapat menutup halaman ini.",
     "desc2": "tunggu sebentar, sistem sedang memproses permintaan anda...",
     "desc3": "Uh Oh... Sepertinya terjadi kesalahan, Silahkan coba lagi nanti atau panggil admin."
