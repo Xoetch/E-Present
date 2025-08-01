@@ -114,26 +114,6 @@ export default function CameraScreen() {
       const isAfterOneHourShift = currentInSeconds > end + oneHour;
       setIsAfterShiftPlusOneHour(isAfterOneHourShift);
     } catch (e) {
-      console.log("Gagal mengambil shift dari userData:", e);
-      Alert.alert("Gagal", "Tidak dapat memproses jam shift pengguna.");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs" }],
-      });
-    }
-  };
-    let allowed = false;
-    if (start < end) {
-      allowed = currentInSeconds >= start && currentInSeconds <= end;
-    } else {
-      // shift lintas hari
-      allowed = currentInSeconds >= start || currentInSeconds <= end;
-    }
-
-    setIsAllowedTime(allowed);
-    const isAfterOneHourShift = currentInSeconds > end + oneHour;
-    setIsAfterShiftPlusOneHour(isAfterOneHourShift);
-  } catch (e) {
     console.log("Gagal mengambil shift dari userData:", e);
     CustomAlert.error(
       "Gagal Memproses Data",

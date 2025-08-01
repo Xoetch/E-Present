@@ -235,7 +235,6 @@ const useHistoryData = (userId) => {
       }
 
       const result = await response.json();
-      console.log("Fetched history data:", result);
 
       // Safely handle the response structure
       const data = result?.data || result || [];

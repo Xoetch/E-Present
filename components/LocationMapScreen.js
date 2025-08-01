@@ -18,7 +18,7 @@ export default function MapLocationScreen() {
   const [location, setLocation] = useState(null);
   const [statusText, setStatusText] = useState("Mengecek lokasi Anda...");
   const [distance, setDistance] = useState(null);
-  const MAX_DISTANCE_METERS = 100000;
+  const MAX_DISTANCE_METERS = 200;
 
   const companyLocation = {
     latitude: -6.348943186235413,

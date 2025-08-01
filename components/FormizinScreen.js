@@ -172,10 +172,10 @@ export default function FormizinPopup({
   };
 
   const submitIzin = async () => {
-    if (!startDate || !endDate || !jenis || !image) {
+    if (!startDate || !endDate || !jenis || !document) {
       CustomAlert.error(
         "Data Tidak Lengkap",
-        "Semua field wajib diisi dan foto harus diambil",
+        "Semua field wajib diisi dan dokumen harus diunggah.",
         [{ text: "OK", style: "cancel" }]
       );
       return;

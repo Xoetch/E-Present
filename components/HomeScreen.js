@@ -58,7 +58,6 @@ export default function HomeScreen({ navigation }) {
   const isInitialMount = useRef(true);
   const [loadingTime, setLoadingTime] = useState(true);
 
-  const [recentAttendance, setRecentAttendance] = useState([]);
 
   const formatToAMPM = (time24) => {
     if (!time24) return "-";
@@ -188,8 +187,6 @@ export default function HomeScreen({ navigation }) {
 
           if (!result?.data) return;
 
-          const hadirData = result.data.filter((item) => item.status_kehadiran === "Hadir");
-
           const todayEntry = result.data.find((item) => item.tanggal === today);
 
           if (todayEntry) {
@@ -200,34 +197,6 @@ export default function HomeScreen({ navigation }) {
           } else {
             setTodayAttendance({ jam_masuk: null, jam_keluar: null });
           }
-
-          let converted = [];
-          hadirData.forEach((item) => {
-            if (item.jam_masuk) {
-              converted.push({
-                id: `${item.tanggal}_${item.jam_masuk}_masuk`,
-                type: "Masuk Kerja",
-                time: item.jam_masuk,
-                date: item.tanggal,
-              });
-            }
-            if (item.jam_keluar) {
-              converted.push({
-                id: `${item.tanggal}_${item.jam_keluar}_pulang`,
-                type: "Pulang Kerja",
-                time: item.jam_keluar,
-                date: item.tanggal,
-              });
-            }
-          });
-
-          converted = converted.sort((a, b) => {
-            const dateTimeA = new Date(`${a.date}T${a.time}`);
-            const dateTimeB = new Date(`${b.date}T${b.time}`);
-            return dateTimeB - dateTimeA;
-          });
-
-          setRecentAttendance(converted.slice(0, 3));
 
           const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
           const pieJson = await pieRes.json();
@@ -255,13 +224,6 @@ export default function HomeScreen({ navigation }) {
             console.log("Invalid pie chart data structure");
             setChartData([]);
           }
-
-          const izinRes = await fetch(`${API.EXISTING_IZIN}/${userId}`);
-          const izinJson = await izinRes.json();
-          if (izinJson?.data) {
-            const existingDates = izinJson.data.map((item) => item.tanggal);
-            setDisabledDates(existingDates);
-          }
         } catch (err) {
           console.log("Error fetching attendance history:", err);
           setChartData([]);
@@ -279,6 +241,7 @@ export default function HomeScreen({ navigation }) {
           const dataString = await AsyncStorage.getItem("userData");
           if (dataString) {
             const data = JSON.parse(dataString);
+            console.log("Fetched userData:", data.foto_pengguna);
             const [shift_mulai, shift_selesai] = (data.jam_shift || "").split(" - ");
               setUserData({
                 id_pengguna: data.id_pengguna || null,
@@ -325,72 +288,6 @@ export default function HomeScreen({ navigation }) {
       };
     }, [animatedValue])
   );
-
-  useFocusEffect(
-    useCallback(() => {
-      const fetchAttendanceHistory = async () => {
-        try {
-          const dataString = await AsyncStorage.getItem("userData");
-          let userId = null;
-          if (dataString) {
-            const data = JSON.parse(dataString);
-            userId = data.id_pengguna;
-          }
-          if (!userId) return;
-
-          const response = await fetch(`${API.HISTORY}/${userId}`);
-          const result = await response.json();
-
-          if (!result?.data) return;
-
-          const todayEntry = result.data.find((item) => item.tanggal === today);
-          
-          if (todayEntry) {
-            setTodayAttendance({
-              jam_masuk: todayEntry.jam_masuk || null,
-              jam_keluar: todayEntry.jam_keluar || null,
-            });
-          } else {
-            setTodayAttendance({ jam_masuk: null, jam_keluar: null });
-          }
-          console.log("Attendance for today:", todayAttendance);
-
-          // FETCH PIE CHART
-          const pieRes = await fetch(`${API.PIE_CHART}/${userId}`);
-          const pieJson = await pieRes.json();
-
-          const getColorByStatus = (label) => {
-            const normalizedLabel = label.toLowerCase();
-            if (
-              normalizedLabel.includes("alfa") ||
-              normalizedLabel.includes("alpa")
-            )
-              return "#F44336";
-            if (normalizedLabel.includes("izin")) return "#FFC107";
-            if (normalizedLabel.includes("hadir")) return "#4CAF50";
-            if (normalizedLabel.includes("sakit")) return "#42A5F5";
-            return "#9E9E9E";
-          };
-
-          const pieData = pieJson.labels.map((label, index) => ({
-            name: label,
-            population: pieJson.data[index],
-            color: getColorByStatus(label),
-            legendFontColor: "#333",
-            legendFontSize: 14,
-          }));
-
-          setChartData(pieData);
-          console.log(pieData);
-        } catch (err) {
-          console.log("Error fetching attendance history:", err);
-        }
-      };
-
-      fetchAttendanceHistory();
-    }, [currentDateStr])
-  );
-
 
   // Time ticker only (no user data here anymore)
   const getCurrentTimeString = () => {
